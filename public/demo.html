@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CasPay API Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .card h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #555;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .response {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .response h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .response-content {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .response-content pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .success {
+      border-left: 4px solid #10b981;
+    }
+
+    .error {
+      border-left: 4px solid #ef4444;
+    }
+
+    .info-badge {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 CasPay SDK Demo</h1>
+      <p>Test CasPay SDK in browser with real payment flows</p>
+    </div>
+
+    <div class="grid">
+      <!-- Product Payment Card -->
+      <div class="card">
+        <span class="info-badge">One-Time Payment</span>
+        <h2>💳 Product Purchase</h2>
+        
+        <form id="productForm">
+          <div class="form-group">
+            <label>Sender Wallet Address</label>
+            <input 
+              type="text" 
+              id="productSender" 
+              value="0203b468d0bd98453a93600aba14bebdc35c91c63581b97e8cac028c6e629725ead8" 
+              placeholder="Your Casper wallet public key"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Transaction Hash (Optional - for mock mode)</label>
+            <input 
+              type="text" 
+              id="productTxHash" 
+              value="" 
+              placeholder="Leave empty for mock mode"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Product</label>
+            <select id="productId">
+              <option value="prod_mjw4pix4_l2f0qtu">Ürün 1 ($10 USD)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Amount (USD)</label>
+            <input 
+              type="number" 
+              id="productAmount" 
+              value="7" 
+              step="0.01"
+            />
+          </div>
+
+          <button type="submit" class="btn" id="productBtn">
+            Process Payment
+          </button>
+        </form>
+      </div>
+
+      <!-- Subscription Payment Card -->
+      <div class="card">
+        <span class="info-badge">Recurring Payment</span>
+        <h2>📅 Subscription</h2>
+        
+        <form id="subscriptionForm">
+          <div class="form-group">
+            <label>Sender Wallet Address</label>
+            <input 
+              type="text" 
+              id="subSender" 
+              value="0203b468d0bd98453a93600aba14bebdc35c91c63581b97e8cac028c6e629725ead8" 
+              placeholder="Your Casper wallet public key"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Transaction Hash (Optional - for mock mode)</label>
+            <input 
+              type="text" 
+              id="subTxHash" 
+              value="" 
+              placeholder="Leave empty for mock mode"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Subscription Plan</label>
+            <select id="planId">
+              <option value="plan_mjw4bh42_xijrx3c">Deneme Plan 1 ($100 USD/weekly)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Amount (USD)</label>
+            <input 
+              type="number" 
+              id="subAmount" 
+              value="10" 
+              step="0.01"
+            />
+          </div>
+
+          <button type="submit" class="btn" id="subBtn">
+            Start Subscription
+          </button>
+        </form>
+      </div>
+
+      <!-- Subscription Check Card -->
+      <div class="card">
+        <span class="info-badge">Status Check</span>
+        <h2>🔍 Check Subscription</h2>
+        
+        <form id="checkForm">
+          <div class="form-group">
+            <label>Subscriber Address</label>
+            <input 
+              type="text" 
+              id="subscriberAddress" 
+              value="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" 
+              placeholder="Wallet address"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Plan ID</label>
+            <input 
+              type="text" 
+              id="checkPlanId" 
+              value="" 
+              placeholder="e.g., plan_mjroxrg9_z1f20zd (leave empty for all)"
+            />
+          </div>
+
+          <button type="submit" class="btn" id="checkBtn">
+            Check Status
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Response Display -->
+    <div class="response">
+      <h2>📊 API Response</h2>
+      <div class="response-content" id="responseBox">
+        <pre style="color: #888;">No requests sent yet. Submit a form above to test the API.</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load CasPay SDK -->
+  <script src="/sdk/caspay.min.js"></script>
+  
+  <script>
+    // Initialize CasPay SDK
+    const caspay = new CasPay({
+      apiKey: 'cp_live_n2rrppf90glgs97avsx5s7l2',
+      merchantId: 'MERCH_1767312602765_NIHUC0C',
+      baseUrl: 'http://localhost:8082'  // Production: https://api.caspay.link
+    });
+
+    console.log('✅ CasPay SDK initialized:', caspay);
+    console.log('📦 SDK Version:', CasPay.version);
+
+    // Product Payment Handler
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('productBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading"></span>Processing...';
+      btn.disabled = true;
+
+      try {
+        const payment = await caspay.payments.create({
+          senderAddress: document.getElementById('productSender').value,
+          transactionHash: document.getElementById('productTxHash').value,
+          productId: document.getElementById('productId').value,
+          amount: parseFloat(document.getElementById('productAmount').value),
+          currency: 'USD'
+        });
+
+        displayResponse(payment, true);
+      } catch (error) {
+        displayResponse(error, false);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // Subscription Payment Handler
+    document.getElementById('subscriptionForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('subBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading"></span>Processing...';
+      btn.disabled = true;
+
+      try {
+        const payment = await caspay.payments.create({
+          senderAddress: document.getElementById('subSender').value,
+          transactionHash: document.getElementById('subTxHash').value,
+          subscriptionPlanId: document.getElementById('planId').value,
+          amount: parseFloat(document.getElementById('subAmount').value),
+          currency: 'USD'
+        });
+
+        displayResponse(payment, true);
+      } catch (error) {
+        displayResponse(error, false);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // Subscription Check Handler (still uses direct fetch - SDK will add this later)
+    document.getElementById('checkForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('checkBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading"></span>Checking...';
+      btn.disabled = true;
+
+      const subscriber = document.getElementById('subscriberAddress').value;
+      const planId = document.getElementById('checkPlanId').value;
+      
+      let url = `http://localhost:8082/api/v1/subscriptions/check/?merchant_id=MERCH_1767312602765_NIHUC0C&subscriber=${subscriber}`;
+      if (planId) {
+        url += `&plan_id=${planId}`;
+      }
+
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'X-CasPay-Key': 'cp_live_n2rrppf90glgs97avsx5s7l2'
+          }
+        });
+
+        const data = await response.json();
+        displayResponse(data, response.ok);
+      } catch (error) {
+        displayResponse({ error: error.message }, false);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // Display Response
+    function displayResponse(data, isSuccess) {
+      const box = document.getElementById('responseBox');
+      box.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+      box.className = `response-content ${isSuccess ? 'success' : 'error'}`;
+    }
+  </script>
+</body>
+</html>
