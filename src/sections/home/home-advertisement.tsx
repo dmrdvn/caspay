@@ -124,7 +124,7 @@ const renderDescription = () => (
           variant="outlined"
           target="_blank"
           rel="noopener noreferrer"
-          href="https://docs.caspay.io"
+          href="https://docs.caspay.link"
           startIcon={<Iconify width={16} icon="eva:external-link-fill" sx={{ mr: 0.5 }} />}
           sx={{
             color: 'common.white',

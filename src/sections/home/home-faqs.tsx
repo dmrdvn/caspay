@@ -45,7 +45,7 @@ const FAQs = [
         <li>
           Learn more about
           <Link
-            href="https://docs.caspay.io/tokens"
+            href="https://docs.caspay.link"
             target="_blank"
             rel="noopener noreferrer"
             sx={{ mx: 0.5 }}
@@ -199,7 +199,7 @@ export function HomeFAQs({ sx, ...other }: BoxProps) {
         <Button
           color="inherit"
           variant="contained"
-          href="mailto:support@caspay.io?subject=[Question] from CasPay User"
+          href="mailto:support@caspay.link?subject=[Question] from CasPay User"
           startIcon={<Iconify icon="solar:letter-bold" />}
         >
           Contact us

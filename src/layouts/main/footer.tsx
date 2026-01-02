@@ -40,7 +40,7 @@ const LINKS = [
       { name: 'Privacy policy', href: '#' },
     ],
   },
-  { headline: 'Contact', children: [{ name: 'info@caspay.io', href: '#' }] },
+  { headline: 'Contact', children: [{ name: 'info@caspay.link', href: '#' }] },
 ];
 
 // ----------------------------------------------------------------------

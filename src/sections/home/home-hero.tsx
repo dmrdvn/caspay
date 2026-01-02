@@ -112,49 +112,19 @@ export function HomeHero({ sx, ...other }: BoxProps) {
         sx={[
           (theme) => ({
             mx: 'auto',
-            [theme.breakpoints.up(smKey)]: { whiteSpace: 'pre' },
+            maxWidth: 720,
+            [theme.breakpoints.up(smKey)]: { whiteSpace: 'pre-line' },
             [theme.breakpoints.up(lgKey)]: { fontSize: 20, lineHeight: '36px' },
           }),
         ]}
       >
-        {`Enterprise-grade payment infrastructure. 
-Compliant, fast, and developer-friendly.`}
+        {`Enterprise-grade payment infrastructure built on Casper Network.
+Secure, compliant, and developer-friendly payment gateway with subscription support.`}
       </Typography>
     </m.div>
   );
 
-  const renderRatings = () => (
-    <m.div {...motionProps}>
-      <Box
-        sx={{
-          gap: 1.5,
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          typography: 'subtitle2',
-          justifyContent: 'center',
-        }}
-      >
-        <AvatarGroup
-          sx={{
-            [`& .${avatarClasses.root}`]: {
-              width: 32,
-              height: 32,
-            },
-          }}
-        >
-          {[1, 2, 3].map((index) => (
-            <Avatar
-              key={index}
-              alt={`User ${index}`}
-              src={`https://api-dev-minimal-v6.vercel.app/assets/images/avatar/avatar-${index}.webp`}
-            />
-          ))}
-        </AvatarGroup>
-        160+ Transactions processed
-      </Box>
-    </m.div>
-  );
+  
 
   const renderButtons = () => (
     <Box
@@ -196,17 +166,7 @@ Compliant, fast, and developer-friendly.`}
             </span>
           </Button>
 
-          <Link
-            color="inherit"
-            variant="body2"
-            component={RouterLink}
-            href="#"
-            underline="always"
-            sx={{ gap: 0.75, alignItems: 'center', display: 'inline-flex' }}
-          >
-            <Iconify width={16} icon="solar:document-text-bold-duotone" />
-            View Documentation
-          </Link>
+          
         </Stack>
       </m.div>
 
@@ -216,40 +176,37 @@ Compliant, fast, and developer-friendly.`}
           size="large"
           variant="outlined"
           component={RouterLink}
-          href="https://github.com/caspay"
+          href="https://docs.caspay.link"
           target="_blank"
           rel="noopener noreferrer"
           startIcon={<Iconify width={24} icon="solar:programming-bold-duotone" />}
           sx={{ height: 52, borderColor: 'currentColor' }}
         >
-          View on GitHub
+          Documentation
         </Button>
       </m.div>
     </Box>
   );
 
   const renderIcons = () => (
-    <Stack spacing={3} sx={{ textAlign: 'center' }}>
+    <Stack spacing={1} sx={{ textAlign: 'center' }}>
       <m.div {...motionProps}>
         <Typography variant="overline" sx={{ opacity: 0.4 }}>
-          CasPay API Available on
+          CasPay SDK Available on
         </Typography>
       </m.div>
 
-      <Box sx={{ gap: 2.5, display: 'flex' }}>
-        {['casper', 'rust', 'typescript', 'nextjs', 'react'].map((platform) => (
+      <Box sx={{ gap: 2.5, display: 'flex', justifyContent: 'center' }}>
+        {['js', 'ts', 'php', 'html'].map((platform) => (
           <m.div {...motionProps} key={platform}>
             <Box
               component="img"
               alt={platform}
-              src={`${CONFIG.assetsDir}/assets/icons/platforms/ic-${platform === 'casper' ? 'js' : platform}.svg`}
+              src={`${CONFIG.assetsDir}/assets/icons/platforms/ic-${platform}.svg`}
               sx={[
                 (theme) => ({
-                  width: 24,
-                  height: 24,
-                  ...theme.applyStyles('dark', {
-                    ...(platform === 'nextjs' && { filter: 'invert(1)' }),
-                  }),
+                  width: 30,
+                  height: 30,
                 }),
               ]}
             />
@@ -321,7 +278,6 @@ Compliant, fast, and developer-friendly.`}
             <m.div style={{ y: y2 }}>{renderText()}</m.div>
           </Stack>
 
-          <m.div style={{ y: y3 }}>{renderRatings()}</m.div>
           <m.div style={{ y: y4 }}>{renderButtons()}</m.div>
           <m.div style={{ y: y5 }}>{renderIcons()}</m.div>
         </Container>

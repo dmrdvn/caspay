@@ -223,7 +223,7 @@ export function HomeForDesigner({ sx, ...other }: BoxProps) {
               variant="outlined"
               target="_blank"
               rel="noopener noreferrer"
-              href="https://docs.caspay.io"
+              href="https://docs.caspay.link"
               endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}
               sx={[
                 (theme) => ({

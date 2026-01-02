@@ -208,7 +208,7 @@ function PlanCard({ plan, sx, ...other }: PlanCardProps) {
         </Box>
 
         <Box sx={{ gap: 2, display: 'flex' }}>
-          {plan.icons.map((icon, index) => (
+          {plan.icons.map((icon) => (
             <Box
               component={m.img}
               variants={varFade('in')}
@@ -218,15 +218,10 @@ function PlanCard({ plan, sx, ...other }: PlanCardProps) {
               sx={{
                 width: 24,
                 height: 24,
-                ...(standardLicense && [1, 2].includes(index) && { display: 'none' }),
               }}
             />
           ))}
-          {standardLicense && (
-            <Box component={m.span} variants={varFade('in')} sx={{ ml: -1 }}>
-              (only)
-            </Box>
-          )}
+          
         </Box>
 
         <Stack spacing={2.5}>
@@ -287,7 +282,7 @@ function PlanCard({ plan, sx, ...other }: PlanCardProps) {
             size="large"
             target="_blank"
             rel="noopener noreferrer"
-            href={standardLicense ? '/auth/casper/sign-in' : 'mailto:contact@caspay.io'}
+            href={standardLicense ? '/auth/casper/sign-in' : 'mailto:contact@caspay.link'}
           >
             {standardLicense ? 'Start Free' : plusLicense ? 'Get Started' : 'Contact Sales'}
           </Button>
@@ -318,6 +313,7 @@ const PLANS = Array.from({ length: 3 }, (_, index) => ({
   icons: [
     `${CONFIG.assetsDir}/assets/icons/platforms/ic-js.svg`,
     `${CONFIG.assetsDir}/assets/icons/platforms/ic-ts.svg`,
-    `${CONFIG.assetsDir}/assets/icons/platforms/ic-figma.svg`,
+    `${CONFIG.assetsDir}/assets/icons/platforms/ic-php.svg`,
+    `${CONFIG.assetsDir}/assets/icons/platforms/ic-html.svg`,
   ],
 }));
