@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
   env: {
     BUILD_STATIC_EXPORT: JSON.stringify(isStaticExport),
   },
-  // Subdomain rewrites for docs
+  // Subdomain rewrites
   async rewrites() {
     return [
       {
@@ -31,10 +31,20 @@ const nextConfig: NextConfig = {
         has: [
           {
             type: 'host',
-            value: 'docs.caspaylink.com',
+            value: 'docs.caspay.link',
           },
         ],
         destination: '/docs/:path*',
+      },
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'api.caspay.link',
+          },
+        ],
+        destination: '/api/:path*',
       },
     ];
   },
