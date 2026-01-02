@@ -23,31 +23,6 @@ const nextConfig: NextConfig = {
   env: {
     BUILD_STATIC_EXPORT: JSON.stringify(isStaticExport),
   },
-  // Subdomain rewrites
-  async rewrites() {
-    return [
-      {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'docs.caspay.link',
-          },
-        ],
-        destination: '/docs/:path*',
-      },
-      {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'api.caspay.link',
-          },
-        ],
-        destination: '/api/:path*',
-      },
-    ];
-  },
   // Transpile CSPR.click packages for Next.js compatibility
   transpilePackages: [
     '@make-software/csprclick-ui',
