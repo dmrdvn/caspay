@@ -27,6 +27,7 @@ import {
 
 const PRIVATE_KEY_BASE64 = process.env.CASPAY_ADMIN_PRIVATE_KEY;
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:7778';
+const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY; // For production
 const CONTRACT_PACKAGE_HASH = process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH;
 const NETWORK_NAME = process.env.NEXT_PUBLIC_NETWORK || 'casper-test';
 
@@ -51,6 +52,15 @@ let privateKeyInstance: PrivateKey | null = null;
 function getRpcClient(): RpcClient {
   if (!rpcClientInstance) {
     const rpcHandler = new HttpHandler(RPC_URL);
+    
+    // Add CSPR.cloud authorization if API key is provided
+    if (CSPR_CLOUD_API_KEY) {
+      rpcHandler.setCustomHeaders({
+        'Authorization': CSPR_CLOUD_API_KEY
+      });
+      console.log('[Casper Client] CSPR.cloud authorization enabled');
+    }
+    
     rpcClientInstance = new RpcClient(rpcHandler);
   }
   return rpcClientInstance;
