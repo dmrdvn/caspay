@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CasPay API Demo</title>
+  <title>CasPay SDK Demo - Interactive Payment Testing</title>
   <style>
     * {
       margin: 0;
@@ -327,15 +327,15 @@
     </div>
   </div>
 
-  <!-- Load CasPay SDK -->
-  <script src="/sdk/caspay.min.js"></script>
+  <!-- Load CasPay SDK from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@caspay/sdk@1.0.1/dist/caspay.min.js"></script>
   
   <script>
     // Initialize CasPay SDK
     const caspay = new CasPay({
       apiKey: 'cp_live_n2rrppf90glgs97avsx5s7l2',
       merchantId: 'MERCH_1767312602765_NIHUC0C',
-      baseUrl: 'http://localhost:8082'  // Production: https://api.caspay.link
+      baseUrl: 'https://api.caspay.link'  // Production API
     });
 
     console.log('✅ CasPay SDK initialized:', caspay);
@@ -407,7 +407,7 @@
       const subscriber = document.getElementById('subscriberAddress').value;
       const planId = document.getElementById('checkPlanId').value;
       
-      let url = `http://localhost:8082/api/v1/subscriptions/check/?merchant_id=MERCH_1767312602765_NIHUC0C&subscriber=${subscriber}`;
+      let url = `https://api.caspay.link/api/v1/subscriptions/check/?merchant_id=MERCH_1767312602765_NIHUC0C&subscriber=${subscriber}`;
       if (planId) {
         url += `&plan_id=${planId}`;
       }
