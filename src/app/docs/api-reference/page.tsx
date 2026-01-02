@@ -1,6 +1,5 @@
 'use client';
 
-"use client"
 import { Box, Container, Typography, Card, CardContent, Stack, Chip, Divider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Tooltip } from '@mui/material';
 import { Iconify } from 'src/components/iconify';
 import { useState } from 'react';

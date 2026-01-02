@@ -109,7 +109,7 @@ Currency: CSPR`}
           <Card sx={{ bgcolor: 'grey.800', color: 'common.white', mb: 2 }}>
             <CardContent>
               <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                [caspay_button product_id="prod_123" amount="100" text="Pay with CasPay"]
+                {`[caspay_button product_id="prod_123" amount="100" text="Pay with CasPay"]`}
               </Typography>
             </CardContent>
           </Card>
@@ -126,7 +126,7 @@ Currency: CSPR`}
           <Card sx={{ bgcolor: 'grey.800', color: 'common.white', mb: 2 }}>
             <CardContent>
               <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                [caspay_subscription plan_id="plan_123" text="Subscribe Now"]
+                {`[caspay_subscription plan_id="plan_123" text="Subscribe Now"]`}
               </Typography>
             </CardContent>
           </Card>
@@ -140,7 +140,7 @@ Currency: CSPR`}
           <Card sx={{ bgcolor: 'grey.800', color: 'common.white', mb: 2 }}>
             <CardContent>
               <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                [caspay_history limit="10"]
+                {`[caspay_history limit="10"]`}
               </Typography>
             </CardContent>
           </Card>
@@ -166,7 +166,7 @@ Currency: CSPR`}
                   Enable Gateway
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Go to WooCommerce → Settings → Payments and enable "CasPay"
+                  Go to WooCommerce → Settings → Payments and enable &quot;CasPay&quot;
                 </Typography>
               </Box>
               <Card sx={{ bgcolor: 'grey.800', color: 'common.white' }}>

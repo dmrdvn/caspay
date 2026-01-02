@@ -172,7 +172,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               boxSizing: 'border-box',
               top: 0,
               height: '100%',
-              borderRight: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRight: (currentTheme) => `1px solid ${currentTheme.palette.divider}`,
             },
           }}
         >

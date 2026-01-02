@@ -122,7 +122,7 @@ export default function ProductsGuidePage() {
             <Card sx={{ bgcolor: 'grey.800', color: 'common.white', mb: 2 }}>
               <CardContent>
                 <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                  await caspay.products.delete('prod_123');
+                  {`await caspay.products.delete('prod_123');`}
                 </Typography>
               </CardContent>
             </Card>

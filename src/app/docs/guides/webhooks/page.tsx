@@ -50,7 +50,7 @@ export default function WebhooksGuidePage() {
           </CardContent>
         </Card>
         <Alert severity="info" icon={<Iconify icon="solar:info-circle-bold" />}>
-          Store the webhook secret securely. It's used to verify webhook signatures.
+          Store the webhook secret securely. It&apos;s used to verify webhook signatures.
         </Alert>
       </Box>
 

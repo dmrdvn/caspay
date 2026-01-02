@@ -139,7 +139,7 @@ console.log(sub.status); // 'active', 'canceled', 'past_due'`}
             <Card sx={{ bgcolor: 'grey.800', color: 'common.white' }}>
               <CardContent>
                 <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                  await caspay.subscriptions.pause('sub_123');
+                  {`await caspay.subscriptions.pause('sub_123');`}
                 </Typography>
               </CardContent>
             </Card>
@@ -151,7 +151,7 @@ console.log(sub.status); // 'active', 'canceled', 'past_due'`}
             <Card sx={{ bgcolor: 'grey.800', color: 'common.white' }}>
               <CardContent>
                 <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                  await caspay.subscriptions.resume('sub_123');
+                  {`await caspay.subscriptions.resume('sub_123');`}
                 </Typography>
               </CardContent>
             </Card>
@@ -163,7 +163,7 @@ console.log(sub.status); // 'active', 'canceled', 'past_due'`}
             <Card sx={{ bgcolor: 'grey.800', color: 'common.white', mb: 2 }}>
               <CardContent>
                 <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                  await caspay.subscriptions.cancel('sub_123');
+                  {`await caspay.subscriptions.cancel('sub_123');`}
                 </Typography>
               </CardContent>
             </Card>

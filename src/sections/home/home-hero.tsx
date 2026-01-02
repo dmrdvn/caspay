@@ -6,14 +6,11 @@ import { useRef, useState } from 'react';
 import { m, useScroll, useSpring, useTransform, useMotionValueEvent } from 'framer-motion';
 
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import AvatarGroup from '@mui/material/AvatarGroup';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import Avatar, { avatarClasses } from '@mui/material/Avatar';
 
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
@@ -45,7 +42,6 @@ export function HomeHero({ sx, ...other }: BoxProps) {
 
   const y1 = useTransformY(scrollProgress.scrollY, distance * -7);
   const y2 = useTransformY(scrollProgress.scrollY, distance * -6);
-  const y3 = useTransformY(scrollProgress.scrollY, distance * -5);
   const y4 = useTransformY(scrollProgress.scrollY, distance * -4);
   const y5 = useTransformY(scrollProgress.scrollY, distance * -3);
 
