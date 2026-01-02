@@ -19,10 +19,10 @@ export function middleware(request: NextRequest) {
 
   // Handle api subdomain
   if (hostname.startsWith('api.')) {
-    // Root path goes to API info page
+    // Root path goes to health check
     if (pathname === '/') {
       const url = request.nextUrl.clone();
-      url.pathname = '/api-info';
+      url.pathname = '/api/health';
       return NextResponse.rewrite(url);
     }
     // API routes continue normally
