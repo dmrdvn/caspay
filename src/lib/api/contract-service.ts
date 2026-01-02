@@ -105,7 +105,7 @@ export async function createProduct(
   console.log('[Contract Service] Sending to contract:', {
     merchant_id: merchantId,
     product_id: productId,
-    price: price
+    price
   });
   
   const args = Args.fromMap({
@@ -179,8 +179,8 @@ export async function createSubscriptionPlan(
   console.log('[Contract Service] Sending to contract:', {
     merchant_id: merchantId,
     plan_id: planId,
-    price: price,
-    interval: interval,
+    price,
+    interval,
     interval_count: intervalCount,
     trial_days: trialDays
   });
