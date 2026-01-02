@@ -16,6 +16,9 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 
+import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
+
 import { paths } from 'src/routes/paths';
 
 import { fDateTime } from 'src/utils/format-time';
@@ -188,19 +191,71 @@ export function ProductDetailsView({ product }: Props) {
             </Typography>
           )}
         </Box>
-        <Typography
-          variant="caption"
-          sx={{
-            fontFamily: 'monospace',
-            bgcolor: 'background.neutral',
-            p: 1,
-            borderRadius: 1,
-            wordBreak: 'break-all',
-          }}
-        >
-          {product.token_address}
-        </Typography>
+        
       </Stack>
+
+      {/* Transaction Hash */}
+      {product.transaction_hash && (
+        <>
+          <Divider />
+          <Stack spacing={1.5}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Iconify icon="solar:link-circle-bold" width={20} color="primary.main" />
+              <Typography variant="overline" color="text.secondary">
+                Transaction Hash
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                position: 'relative',
+                bgcolor: 'background.neutral',
+                p: 1.5,
+                borderRadius: 1,
+                '&:hover .copy-button': {
+                  opacity: 1,
+                },
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontFamily: 'monospace',
+                  wordBreak: 'break-all',
+                  pr: 4,
+                }}
+              >
+                {product.transaction_hash} 
+                
+              </Typography>
+              <Box
+                className="copy-button"
+                sx={{
+                  position: 'absolute',
+                  top: 10,
+                  right: 8,
+                  cursor: 'pointer',
+                  transition: 'opacity 0.2s',
+                  borderRadius: 0.5,
+                 
+                }}
+              >
+                <Tooltip title="Copy transaction hash">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      if (product.transaction_hash) {
+                        navigator.clipboard.writeText(product.transaction_hash);
+                      }
+                    }}
+                  >
+                    <Iconify icon="solar:copy-bold" width={20} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+          </Stack>
+        </>
+      )}
 
       <Divider />
 

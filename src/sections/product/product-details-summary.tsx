@@ -104,6 +104,27 @@ export function ProductDetailsSummary({ product, ...other }: Props) {
         </Typography>
       </Box>
 
+      {product.transaction_hash && (
+        <Box>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+            Transaction Hash
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              fontFamily: 'monospace',
+              fontSize: '0.875rem',
+              wordBreak: 'break-all',
+              bgcolor: 'background.neutral',
+              p: 1.5,
+              borderRadius: 1,
+            }}
+          >
+            {product.transaction_hash}
+          </Typography>
+        </Box>
+      )}
+
       {token_address === 'NATIVE' && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Iconify icon="solar:shield-check-bold" width={20} color="success.main" />

@@ -15,7 +15,7 @@ import { fCurrency } from 'src/utils/format-number';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 import { useMerchants, useSubscriptionPlans } from 'src/hooks';
-
+import Tooltip from '@mui/material/Tooltip';
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
@@ -237,6 +237,43 @@ export function SubscriptionPlanDetailsView({ id }: Props) {
                     </Typography>
                   </Stack>
                 </Grid>
+
+                {/* Transaction Hash */}
+                {plan.transaction_hash && (
+                  <Grid size={{ xs: 12 }}>
+                    <Stack spacing={1}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Iconify icon="solar:link-circle-bold" width={20} color="primary.main" />
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Transaction Hash
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontFamily: 'monospace',
+                          wordBreak: 'break-all',
+                        }}
+                      >
+                        {plan.transaction_hash}
+                        <Tooltip title="Copy transaction hash">
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              if (plan.transaction_hash) {
+                                navigator.clipboard.writeText(plan.transaction_hash);
+                              }
+                            }}
+                          >
+                            <Iconify icon="solar:copy-bold" width={20} />
+                          </IconButton>
+                        </Tooltip>
+
+
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                )}
 
                 {/* Created At */}
                 <Grid size={{ xs: 12, sm: 6 }}>

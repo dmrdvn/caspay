@@ -115,9 +115,23 @@ export function MerchantDetailsView({ id }: Props) {
                 {merchant.status}
               </Label>
             </Box>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Merchant ID: {merchant.merchant_id}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontFamily: 'monospace' }}>
+                {merchant.merchant_id}
+              </Typography>
+              <Tooltip title="Copy Merchant ID">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    if (merchant.merchant_id) {
+                      navigator.clipboard.writeText(merchant.merchant_id);
+                    }
+                  }}
+                >
+                  <Iconify icon="solar:copy-bold" width={16} />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
         </Box>
 
@@ -244,15 +258,15 @@ export function MerchantDetailsView({ id }: Props) {
 
         <Divider />
 
-        {/* Contract Address */}
+        {/* Transaction Hash */}
         <Box>
           <Box sx={{ gap: 1.5, display: 'flex', alignItems: 'flex-start' }}>
             <Iconify icon="solar:code-circle-bold" sx={{ mt: 0.5 }} />
             <Box sx={{ flex: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
-                Contract Address
+                Transaction Hash
               </Typography>
-              {merchant.contract_hash ? (
+              {merchant.transaction_hash ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography
                     variant="subtitle2"
@@ -262,14 +276,14 @@ export function MerchantDetailsView({ id }: Props) {
                       wordBreak: 'break-all',
                     }}
                   >
-                    {merchant.contract_hash}
+                    {merchant.transaction_hash}
                   </Typography>
-                  <Tooltip title="Copy contract hash">
+                  <Tooltip title="Copy transaction hash">
                     <IconButton
                       size="small"
                       onClick={() => {
-                        if (merchant.contract_hash) {
-                          navigator.clipboard.writeText(merchant.contract_hash);
+                        if (merchant.transaction_hash) {
+                          navigator.clipboard.writeText(merchant.transaction_hash);
                         }
                       }}
                     >
@@ -288,7 +302,7 @@ export function MerchantDetailsView({ id }: Props) {
                 >
                   <Typography variant="caption" sx={{ color: 'warning.darker', display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Iconify icon="solar:clock-circle-bold" width={14} />
-                    Contract not deployed yet
+                    Not registered on blockchain yet
                   </Typography>
                 </Box>
               )}

@@ -12,121 +12,177 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #3f4041;
       min-height: 100vh;
-      padding: 40px 20px;
+      padding: 24px;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
     .header {
-      text-align: center;
-      color: white;
       margin-bottom: 40px;
     }
 
     .header h1 {
-      font-size: 48px;
-      margin-bottom: 10px;
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
     }
 
-    .header p {
-      font-size: 18px;
-      opacity: 0.9;
+    .breadcrumb {
+      font-size: 14px;
+      color: #919eab;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .breadcrumb a {
+      color: #919eab;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .breadcrumb a:hover {
+      color: #fff;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 30px;
-      margin-bottom: 40px;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
     }
 
     .card {
-      background: white;
+      background: #161c24;
       border-radius: 16px;
-      padding: 30px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      padding: 24px;
+      
     }
 
-    .card h2 {
-      color: #333;
-      margin-bottom: 20px;
-      font-size: 24px;
+    .card-header {
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-subtitle {
+      font-size: 14px;
+      color: #919eab;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-secondary {
+      background: rgba(255, 86, 48, 0.16);
+      color: rgb(255, 86, 48);
+    }
+
+    .badge-primary {
+      background: rgba(0, 184, 217, 0.16);
+      color: rgb(0, 184, 217);
+    }
+
+    .badge-info {
+      background: rgba(0, 108, 156, 0.16);
+      color: rgb(97, 243, 243);
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     label {
       display: block;
-      color: #555;
+      color: #919eab;
       font-weight: 600;
       margin-bottom: 8px;
       font-size: 14px;
     }
 
-    input, select {
+    input, select, textarea {
       width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e0e0e0;
+      padding: 16px 14px;
+      background: rgba(145, 158, 171, 0.08);
+      border: 1px solid rgba(145, 158, 171, 0.2);
       border-radius: 8px;
       font-size: 14px;
-      transition: border-color 0.3s;
+      color: #fff;
+      transition: all 0.2s;
+      font-family: inherit;
     }
 
-    input:focus, select:focus {
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: 'Courier New', monospace;
+    }
+
+    input:focus, select:focus, textarea:focus {
       outline: none;
-      border-color: #667eea;
+      background: rgba(145, 158, 171, 0.12);
+      border-color: rgb(0, 184, 217);
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #637381;
     }
 
     .btn {
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+      padding: 16px;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.2s;
+      font-family: inherit;
     }
 
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    .btn-primary {
+      background: linear-gradient(135deg, rgb(0, 184, 217) 0%, rgb(0, 108, 156) 100%);
+      color: #fff;
+      box-shadow: 0 8px 16px 0 rgba(0, 184, 217, 0.24);
     }
 
-    .btn:active {
-      transform: translateY(0);
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 0 0 0 rgba(0, 184, 217, 0.24), 0 16px 32px -4px rgba(0, 184, 217, 0.24);
+    }
+
+    .btn-info {
+      background: linear-gradient(135deg, rgb(0, 108, 156) 0%, rgb(0, 75, 107) 100%);
+      color: #fff;
+      box-shadow: 0 8px 16px 0 rgba(0, 108, 156, 0.24);
     }
 
     .btn:disabled {
-      opacity: 0.6;
+      opacity: 0.48;
       cursor: not-allowed;
-      transform: none;
     }
 
-    .response {
-      background: white;
-      border-radius: 16px;
-      padding: 30px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    }
-
-    .response h2 {
-      color: #333;
-      margin-bottom: 20px;
-    }
-
-    .response-content {
-      background: #f8f9fa;
+    .response-box {
+      background: rgba(145, 158, 171, 0.08);
       border-radius: 8px;
       padding: 20px;
       font-family: 'Courier New', monospace;
@@ -134,31 +190,22 @@
       overflow-x: auto;
       max-height: 500px;
       overflow-y: auto;
+      border-left: 4px solid transparent;
     }
 
-    .response-content pre {
+    .response-box.success {
+      border-left-color: rgb(34, 197, 94);
+    }
+
+    .response-box.error {
+      border-left-color: rgb(255, 86, 48);
+    }
+
+    .response-box pre {
       margin: 0;
+      color: #919eab;
       white-space: pre-wrap;
       word-wrap: break-word;
-    }
-
-    .success {
-      border-left: 4px solid #10b981;
-    }
-
-    .error {
-      border-left: 4px solid #ef4444;
-    }
-
-    .info-badge {
-      display: inline-block;
-      background: #667eea;
-      color: white;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-bottom: 10px;
     }
 
     .loading {
@@ -170,53 +217,92 @@
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
       margin-right: 8px;
+      vertical-align: middle;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    .col-12 { grid-column: span 12; }
+    .col-4 { grid-column: span 4; }
+
+    @media (max-width: 1024px) {
+      .col-4 { grid-column: span 6; }
+    }
+
+    @media (max-width: 768px) {
+      .col-4 { grid-column: span 12; }
+      body { padding: 16px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🚀 CasPay SDK Demo</h1>
-      <p>Test CasPay SDK in browser with real payment flows</p>
+      <div class="breadcrumb">
+        <a href="/">Home</a>
+        <span>/</span>
+        <span>CasPay SDK Demo</span>
+      </div>
+      <h1>CasPay SDK Demo Interface</h1>
     </div>
 
     <div class="grid">
+      <!-- Credentials Section -->
+      <div class="card col-12">
+        <div class="card-header">
+          <div class="card-title">Configuration</div>
+          <div class="card-subtitle">Set your merchant credentials</div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Merchant ID</label>
+            <input type="text" id="merchantId" placeholder="Enter your merchant ID">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>API Key</label>
+            <input type="text" id="apiKey" placeholder="Enter your API key">
+          </div>
+        </div>
+      </div>
+
       <!-- Product Payment Card -->
-      <div class="card">
-        <span class="info-badge">One-Time Payment</span>
-        <h2>💳 Product Purchase</h2>
+      <div class="card col-4">
+        <div class="card-header">
+          <div class="card-title">
+            Product Purchase
+            <span class="badge badge-secondary">One-Time</span>
+          </div>
+          <div class="card-subtitle">One-time Payment</div>
+        </div>
         
         <form id="productForm">
           <div class="form-group">
             <label>Sender Wallet Address</label>
-            <input 
-              type="text" 
+            <textarea 
               id="productSender" 
-              value="0203b468d0bd98453a93600aba14bebdc35c91c63581b97e8cac028c6e629725ead8" 
               placeholder="Your Casper wallet public key"
               required
-            />
+            ></textarea>
           </div>
 
           <div class="form-group">
-            <label>Transaction Hash (Optional - for mock mode)</label>
+            <label>Transaction Hash (Optional)</label>
             <input 
               type="text" 
               id="productTxHash" 
-              value="" 
               placeholder="Leave empty for mock mode"
             />
           </div>
 
           <div class="form-group">
-            <label>Product</label>
-            <select id="productId">
-              <option value="prod_mjw4pix4_l2f0qtu">Ürün 1 ($10 USD)</option>
-            </select>
+            <label>Product ID</label>
+            <input 
+              type="text" 
+              id="productId"
+              placeholder="Enter product ID"
+            />
           </div>
 
           <div class="form-group">
@@ -224,80 +310,42 @@
             <input 
               type="number" 
               id="productAmount" 
-              value="7" 
               step="0.01"
             />
           </div>
 
-          <button type="submit" class="btn" id="productBtn">
+          <button type="submit" class="btn btn-primary" id="productBtn">
             Process Payment
           </button>
         </form>
       </div>
 
       <!-- Subscription Payment Card -->
-      <div class="card">
-        <span class="info-badge">Recurring Payment</span>
-        <h2>📅 Subscription</h2>
+      <div class="card col-4">
+        <div class="card-header">
+          <div class="card-title">
+            Subscription
+            <span class="badge badge-primary">Recurring</span>
+          </div>
+          <div class="card-subtitle">Recurring Payment</div>
+        </div>
         
         <form id="subscriptionForm">
           <div class="form-group">
             <label>Sender Wallet Address</label>
-            <input 
-              type="text" 
+            <textarea 
               id="subSender" 
-              value="0203b468d0bd98453a93600aba14bebdc35c91c63581b97e8cac028c6e629725ead8" 
               placeholder="Your Casper wallet public key"
               required
-            />
+            ></textarea>
           </div>
 
           <div class="form-group">
-            <label>Transaction Hash (Optional - for mock mode)</label>
+            <label>Transaction Hash (Optional)</label>
             <input 
               type="text" 
               id="subTxHash" 
-              value="" 
               placeholder="Leave empty for mock mode"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Subscription Plan</label>
-            <select id="planId">
-              <option value="plan_mjw4bh42_xijrx3c">Deneme Plan 1 ($100 USD/weekly)</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Amount (USD)</label>
-            <input 
-              type="number" 
-              id="subAmount" 
-              value="10" 
-              step="0.01"
-            />
-          </div>
-
-          <button type="submit" class="btn" id="subBtn">
-            Start Subscription
-          </button>
-        </form>
-      </div>
-
-      <!-- Subscription Check Card -->
-      <div class="card">
-        <span class="info-badge">Status Check</span>
-        <h2>🔍 Check Subscription</h2>
-        
-        <form id="checkForm">
-          <div class="form-group">
-            <label>Subscriber Address</label>
-            <input 
-              type="text" 
-              id="subscriberAddress" 
-              value="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" 
-              placeholder="Wallet address"
             />
           </div>
 
@@ -305,24 +353,71 @@
             <label>Plan ID</label>
             <input 
               type="text" 
-              id="checkPlanId" 
-              value="" 
-              placeholder="e.g., plan_mjroxrg9_z1f20zd (leave empty for all)"
+              id="planId" 
+              placeholder="Enter plan ID"
             />
           </div>
 
-          <button type="submit" class="btn" id="checkBtn">
+          <div class="form-group">
+            <label>Amount (USD)</label>
+            <input 
+              type="number" 
+              id="subAmount" 
+               
+              step="0.01"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="subBtn">
+            Start Subscription
+          </button>
+        </form>
+      </div>
+
+      <!-- Subscription Check Card -->
+      <div class="card col-4">
+        <div class="card-header">
+          <div class="card-title">
+            Check Subscription
+            <span class="badge badge-info">Status Check</span>
+          </div>
+          <div class="card-subtitle">Verify status via API</div>
+        </div>
+        
+        <form id="checkForm">
+          <div class="form-group">
+            <label>Subscriber Address</label>
+            <textarea 
+              id="subscriberAddress" 
+              placeholder="Wallet address"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Plan ID (Optional)</label>
+            <input 
+              type="text" 
+              id="checkPlanId" 
+              placeholder="e.g. plan_mjroxrg9_z1f20zd (leave empty for all)"
+            />
+          </div>
+
+          <div style="flex-grow: 1;"></div>
+
+          <button type="submit" class="btn btn-info" id="checkBtn">
             Check Status
           </button>
         </form>
       </div>
-    </div>
 
-    <!-- Response Display -->
-    <div class="response">
-      <h2>📊 API Response</h2>
-      <div class="response-content" id="responseBox">
-        <pre style="color: #888;">No requests sent yet. Submit a form above to test the API.</pre>
+      <!-- API Response -->
+      <div class="card col-12">
+        <div class="card-header">
+          <div class="card-title">API Response</div>
+        </div>
+        <div class="response-box" id="responseBox">
+          <pre style="color: #637381; font-style: italic;">No requests sent yet. Submit a form above to test the API.</pre>
+        </div>
       </div>
     </div>
   </div>
@@ -332,14 +427,21 @@
   
   <script>
     // Initialize CasPay SDK
-    const caspay = new CasPay({
-      apiKey: 'cp_live_n2rrppf90glgs97avsx5s7l2',
-      merchantId: 'MERCH_1767312602765_NIHUC0C',
-      baseUrl: 'https://api.caspay.link'  // Production API
-    });
+    function initCasPay() {
+      const merchantId = document.getElementById('merchantId').value;
+      const apiKey = document.getElementById('apiKey').value;
 
-    console.log('✅ CasPay SDK initialized:', caspay);
-    console.log('📦 SDK Version:', CasPay.version);
+      if (!merchantId || !apiKey) {
+        alert('Please enter Merchant ID and API Key first');
+        return null;
+      }
+
+      return new CasPay({
+        apiKey,
+        merchantId,
+        baseUrl: 'https://api.caspay.link'
+      });
+    }
 
     // Product Payment Handler
     document.getElementById('productForm').addEventListener('submit', async (e) => {
@@ -378,6 +480,13 @@
       btn.disabled = true;
 
       try {
+        const caspay = initCasPay();
+        if (!caspay) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
         const payment = await caspay.payments.create({
           senderAddress: document.getElementById('subSender').value,
           transactionHash: document.getElementById('subTxHash').value,
@@ -404,10 +513,20 @@
       btn.innerHTML = '<span class="loading"></span>Checking...';
       btn.disabled = true;
 
+      const merchantId = document.getElementById('merchantId').value;
+      const apiKey = document.getElementById('apiKey').value;
+
+      if (!merchantId || !apiKey) {
+        alert('Please enter Merchant ID and API Key first');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+      }
+
       const subscriber = document.getElementById('subscriberAddress').value;
       const planId = document.getElementById('checkPlanId').value;
       
-      let url = `https://api.caspay.link/api/v1/subscriptions/check/?merchant_id=MERCH_1767312602765_NIHUC0C&subscriber=${subscriber}`;
+      let url = `https://api.caspay.link/api/v1/subscriptions/check/?merchant_id=${merchantId}&subscriber=${subscriber}`;
       if (planId) {
         url += `&plan_id=${planId}`;
       }
@@ -416,7 +535,7 @@
         const response = await fetch(url, {
           method: 'GET',
           headers: {
-            'X-CasPay-Key': 'cp_live_n2rrppf90glgs97avsx5s7l2'
+            'X-CasPay-Key': apiKey
           }
         });
 
@@ -434,7 +553,7 @@
     function displayResponse(data, isSuccess) {
       const box = document.getElementById('responseBox');
       box.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-      box.className = `response-content ${isSuccess ? 'success' : 'error'}`;
+      box.className = `response-box ${isSuccess ? 'success' : 'error'}`;
     }
   </script>
 </body>

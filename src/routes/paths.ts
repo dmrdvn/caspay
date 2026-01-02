@@ -13,6 +13,7 @@ export const paths = {
   page404: '/error/404',
   page500: '/error/500',
   components: '/components',
+  demo: '/demo-2',
   
   // AUTH
   auth: {

@@ -133,9 +133,15 @@ export async function createSubscriptionPlan(
     );
     
     console.log('[createSubscriptionPlan] Blockchain registration successful:', deployHash);
+    
+    await supabase
+      .from('subscription_plans')
+      .update({ transaction_hash: deployHash })
+      .eq('id', data.id);
+    
+    (data as any).transaction_hash = deployHash;
   } catch (contractError: any) {
     console.error('[createSubscriptionPlan] Blockchain registration failed:', contractError);
-    // Contract hatası kritik değil, plan Supabase'de oluşturuldu
   }
 
   return data as SubscriptionPlan;

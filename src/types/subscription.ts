@@ -23,6 +23,7 @@ export type SubscriptionPlan = {
   features: SubscriptionPlanFeature[] | null;
   metadata: Record<string, any> | null;
   active: boolean;
+  transaction_hash: string | null; // Blockchain creation transaction hash
   created_at: string;
   updated_at: string;
 };

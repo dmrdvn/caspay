@@ -30,6 +30,7 @@ export type Product = {
   track_inventory: boolean; // Whether to track stock
   metadata?: Record<string, any> | null; // JSONB - flexible data (SKU, weight, etc.)
   active: boolean; // Product status
+  transaction_hash?: string | null; // Blockchain creation transaction hash
   created_at: string; // timestamptz
   updated_at: string; // timestamptz
 };

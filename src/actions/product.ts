@@ -117,9 +117,15 @@ export async function createProduct(input: ProductCreateInput): Promise<Product>
     );
     
     console.log('[createProduct] Blockchain registration successful:', deployHash);
+    
+    await supabase
+      .from('products')
+      .update({ transaction_hash: deployHash })
+      .eq('id', data.id);
+    
+    (data as any).transaction_hash = deployHash;
   } catch (contractError: any) {
     console.error('[createProduct] Blockchain registration failed:', contractError);
-    // Contract hatası kritik değil, ürün Supabase'de oluşturuldu
   }
 
   return data as Product;

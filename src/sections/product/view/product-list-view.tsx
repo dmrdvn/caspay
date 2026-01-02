@@ -268,7 +268,9 @@ const useGetColumns = ({ onDeleteRow, onToggleStatus }: UseGetColumnsProps) => {
         field: 'name',
         headerName: 'Product',
         flex: 1,
-        minWidth: 260,
+        minWidth: 200,
+        sortable: false,
+        filterable: false,
         hideable: false,
         renderCell: (params) => (
           <RenderCellProduct
@@ -281,7 +283,10 @@ const useGetColumns = ({ onDeleteRow, onToggleStatus }: UseGetColumnsProps) => {
       {
         field: 'product_id',
         headerName: 'Product ID',
-        width: 160,
+        flex: 1,
+        minWidth: 150,
+        sortable: false,
+        filterable: false,
         renderCell: (params) => (
           <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
             {params.row.product_id}
@@ -291,7 +296,10 @@ const useGetColumns = ({ onDeleteRow, onToggleStatus }: UseGetColumnsProps) => {
       {
         field: 'price',
         headerName: 'Price',
-        width: 140,
+        flex: 0.8,
+        minWidth: 120,
+        sortable: false,
+        filterable: false,
         renderCell: (params) => (
           <RenderCellPrice
             params={params}
@@ -303,7 +311,10 @@ const useGetColumns = ({ onDeleteRow, onToggleStatus }: UseGetColumnsProps) => {
       {
         field: 'token_address',
         headerName: 'Token',
-        width: 120,
+        flex: 0.6,
+        minWidth: 100,
+        sortable: false,
+        filterable: false,
         renderCell: (params) => (
           <Chip
             label={params.row.token_address === 'NATIVE' ? 'CSPR' : 'CEP-18'}
@@ -316,7 +327,10 @@ const useGetColumns = ({ onDeleteRow, onToggleStatus }: UseGetColumnsProps) => {
       {
         field: 'stock',
         headerName: 'Inventory',
-        width: 140,
+        flex: 0.9,
+        minWidth: 140,
+        sortable: false,
+        filterable: false,
         renderCell: (params) => {
           if (!params.row.track_inventory) {
             return (
@@ -341,7 +355,10 @@ const useGetColumns = ({ onDeleteRow, onToggleStatus }: UseGetColumnsProps) => {
       {
         field: 'active',
         headerName: 'Status',
-        width: 100,
+        flex: 0.6,
+        minWidth: 100,
+        sortable: false,
+        filterable: false,
         renderCell: (params) => (
           <RenderCellPublish params={params} publish={params.row.active ? 'active' : 'inactive'} />
         ),
@@ -349,7 +366,10 @@ const useGetColumns = ({ onDeleteRow, onToggleStatus }: UseGetColumnsProps) => {
       {
         field: 'created_at',
         headerName: 'Created',
-        width: 160,
+        flex: 0.9,
+        minWidth: 140,
+        sortable: false,
+        filterable: false,
         renderCell: (params) => <RenderCellCreatedAt params={params} />,
       },
       {

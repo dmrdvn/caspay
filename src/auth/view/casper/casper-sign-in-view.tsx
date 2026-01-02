@@ -91,7 +91,7 @@ export function CasperSignInView() {
 
       if (!provider) {
         setErrorMessage(
-          'Casper Wallet uzantısı bulunamadı. Lütfen Casper Wallet uzantısını yükleyin.'
+          'Casper Wallet extension not found. Please install the Casper Wallet extension.'
         );
         return;
       }
@@ -103,15 +103,15 @@ export function CasperSignInView() {
         // Connection successful, refresh session
         await checkUserSession?.();
       } else {
-        setErrorMessage('Bağlantı reddedildi.');
+        setErrorMessage('Connection denied.');
       }
     } catch (error: any) {
       console.error('Wallet connection error:', error);
 
       if (error.code === 1) {
-        setErrorMessage('Cüzdan kilitli. Lütfen Casper Wallet uzantısını açın ve kilidini açın.');
+        setErrorMessage('Wallet is locked. Please open Casper Wallet extension and unlock it.');
       } else {
-        setErrorMessage(error.message || 'Cüzdan bağlantısı başarısız oldu');
+        setErrorMessage(error.message || 'Wallet connection failed');
       }
     } finally {
       setIsConnecting(false);
@@ -136,32 +136,34 @@ export function CasperSignInView() {
         sx={{
           bgcolor: 'primary.main',
           py: 1.5,
+          fontSize: '1rem',
+          fontWeight: 600,
           '&:hover': { bgcolor: 'primary.dark' },
         }}
       >
         {isConnecting || loading
-          ? 'Bağlanıyor...'
+          ? 'Connecting...'
           : walletAvailable
-            ? 'Casper Wallet ile Bağlan'
-            : 'Cüzdan Aranıyor...'}
+            ? 'Connect with Casper Wallet'
+            : 'Looking for Wallet...'}
       </Button>
 
       {!walletAvailable && (
-        <Alert severity="warning">
-          Casper Wallet uzantısı bulunamadı.{' '}
+        <Alert severity="warning" sx={{ borderRadius: 2 }}>
+          Casper Wallet extension not found.{' '}
           <a
             href="https://www.casperwallet.io/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'inherit', fontWeight: 'bold' }}
+            style={{ color: 'inherit', fontWeight: 'bold', textDecoration: 'underline' }}
           >
-            Buradan indirin
+            Install here
           </a>
         </Alert>
       )}
 
       <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', mt: 2 }}>
-        Desteklenen cüzdan:
+        Supported wallet:
       </Typography>
 
       <Box
@@ -180,15 +182,15 @@ export function CasperSignInView() {
   return (
     <>
       <FormHead
-        title="CasPay'e Hoş Geldiniz"
-        description="Casper wallet'ınızı bağlayarak merchant dashboard'a erişin"
+        title="Welcome to CasPay"
+        description="Connect your Casper wallet to access the merchant dashboard"
         sx={{ textAlign: { xs: 'center', md: 'left' } }}
       />
 
       <Box sx={{ mb: 3 }}>
         <Alert severity="info" sx={{ mb: 2 }}>
-          CasPay, Casper Network üzerinde ödeme kabul etmenizi ve abonelik yönetmenizi sağlar.
-          Başlamak için wallet&apos;ınızı bağlayın.
+          CasPay enables you to receive payments and manage subscriptions on the Casper Network.
+          Connect your wallet to get started.
         </Alert>
       </Box>
 
@@ -202,7 +204,7 @@ export function CasperSignInView() {
 
       <Box sx={{ mt: 4, textAlign: 'center' }}>
         <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-          Bağlanarak, Kullanım Şartları ve Gizlilik Politikasını kabul etmiş olursunuz.
+          By connecting, you agree to our Terms of Service and Privacy Policy.
         </Typography>
       </Box>
     </>

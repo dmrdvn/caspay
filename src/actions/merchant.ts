@@ -73,26 +73,25 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
       });
       
       const deployHash = await registerMerchantOnChain(
-        merchant.merchant_id, // Custom merchant_id kullan (NOT merchant.id)
+        merchant.merchant_id, 
         userProfile.public_key
       );
       
       console.log('[createMerchant] Blockchain registration successful:', deployHash);
       
-      // Deploy hash'i kaydet (opsiyonel)
+      // Deploy hash'i kaydet
       await supabase
         .from('merchants')
         .update({ 
           status: 'active',
-          // deploy_hash: deployHash // Eğer merchants tablosunda deploy_hash kolonu varsa
+          transaction_hash: deployHash
         })
         .eq('id', merchant.id);
         
       merchant.status = 'active';
+      merchant.transaction_hash = deployHash;
     } catch (contractError: any) {
       console.error('[createMerchant] Blockchain registration failed:', contractError);
-      // Contract hatasında merchant'i pending bırak, sonra retry edilebilir
-      // Şimdilik sadece log at, hata fırlatma
     }
 
     return merchant as Merchant;

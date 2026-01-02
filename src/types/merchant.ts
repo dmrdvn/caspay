@@ -11,7 +11,7 @@ export type Merchant = {
   logo_url: string | null;
   brand_color?: string | null;
   wallet_address?: string | null;
-  contract_hash?: string | null; // Deployed contract address on Casper Network
+  transaction_hash?: string | null; // Blockchain registration transaction hash
   contract_deployed_at?: string | null;
   status: 'pending' | 'active' | 'suspended' | 'closed';
   created_at?: string;
