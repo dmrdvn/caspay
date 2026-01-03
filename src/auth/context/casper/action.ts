@@ -183,3 +183,24 @@ export async function updateUserProfile(
     throw error;
   }
 }
+
+/**
+ * Demo login for hackathon - bypasses wallet connection
+ */
+export async function demoLogin(publicKey: string): Promise<CasperUserType> {
+  try {
+    // Use syncUserToSupabase to create/get demo user
+    const user = await syncUserToSupabase(publicKey, '', 'demo-wallet');
+
+    // Store in localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('casper_public_key', publicKey);
+      localStorage.setItem('casper_user', JSON.stringify(user));
+    }
+
+    return user;
+  } catch (error) {
+    console.error('demoLogin error:', error);
+    throw error;
+  }
+}

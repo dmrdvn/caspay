@@ -96,12 +96,8 @@ export function CasperAuthProvider({ children }: Props) {
 
   // Check existing session
   const checkUserSession = useCallback(async () => {
-    // Prevent multiple simultaneous checks
-    if (sessionCheckedRef.current) return;
-    
     try {
       setState({ loading: true });
-      sessionCheckedRef.current = true;
 
       // Check local storage for existing session
       const storedPublicKey = localStorage.getItem(STORAGE_KEYS.PUBLIC_KEY);
@@ -110,6 +106,7 @@ export function CasperAuthProvider({ children }: Props) {
         const user = await getUserFromSupabase(storedPublicKey);
 
         if (user) {
+          sessionCheckedRef.current = true;
           setState({
             user: {
               ...user,
@@ -135,6 +132,7 @@ export function CasperAuthProvider({ children }: Props) {
               localStorage.setItem(STORAGE_KEYS.PUBLIC_KEY, activeKey);
               localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
+              sessionCheckedRef.current = true;
               setState({
                 user: {
                   ...user,
@@ -152,9 +150,11 @@ export function CasperAuthProvider({ children }: Props) {
         }
       }
 
+      sessionCheckedRef.current = true;
       setState({ user: null, loading: false });
     } catch (error) {
       console.error('checkUserSession error:', error);
+      sessionCheckedRef.current = true;
       setState({ user: null, loading: false });
     }
   }, [getProvider, setState]);
@@ -246,7 +246,9 @@ export function CasperAuthProvider({ children }: Props) {
 
   // Initialize on mount - check session immediately, no delay!
   useEffect(() => {
-    checkUserSession();
+    if (!sessionCheckedRef.current) {
+      checkUserSession();
+    }
   }, [checkUserSession]);
 
   // ----------------------------------------------------------------------

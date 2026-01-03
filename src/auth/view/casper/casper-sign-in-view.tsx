@@ -5,16 +5,24 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
+import { Iconify } from 'src/components/iconify';
 import { SvgColor } from 'src/components/svg-color';
 
+import { demoLogin } from '../../context/casper/action';
 import { useAuthContext } from '../../hooks';
 import { FormHead } from '../../components/form-head';
+
+// ----------------------------------------------------------------------
+
+// Demo wallet public key for hackathon
+const DEMO_PUBLIC_KEY = '01542cd2c4599118a58e8a1ee585fd88258e4519b17bcad00e2bd142cf3ef93aef';
 
 // ----------------------------------------------------------------------
 
@@ -24,6 +32,7 @@ export function CasperSignInView() {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isDemoLogin, setIsDemoLogin] = useState(false);
   const [walletAvailable, setWalletAvailable] = useState(false);
 
   const providerRef = useRef<any>(null);
@@ -118,6 +127,26 @@ export function CasperSignInView() {
     }
   };
 
+  const handleDemoLogin = async () => {
+    try {
+      setIsDemoLogin(true);
+      setErrorMessage(null);
+
+      const user = await demoLogin(DEMO_PUBLIC_KEY);
+      
+      // Directly update auth state by calling checkUserSession
+      // This will force a re-check and redirect
+      if (user) {
+        await checkUserSession?.();
+      }
+    } catch (error: any) {
+      console.error('Demo login error:', error);
+      setErrorMessage(error.message || 'Demo login failed');
+    } finally {
+      setIsDemoLogin(false);
+    }
+  };
+
   const renderWalletOptions = () => (
     <Box sx={{ gap: 2, display: 'flex', flexDirection: 'column' }}>
       <Button
@@ -161,6 +190,51 @@ export function CasperSignInView() {
           </a>
         </Alert>
       )}
+
+      <Divider sx={{ my: 2 }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary', px: 2 }}>
+          OR
+        </Typography>
+      </Divider>
+
+      {/* Demo Login Button */}
+      <Button
+        fullWidth
+        size="large"
+        variant="outlined"
+        color="warning"
+        onClick={handleDemoLogin}
+        disabled={isDemoLogin || loading}
+        startIcon={
+          isDemoLogin ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            <Iconify icon="solar:rocket-2-bold-duotone" width={24} />
+          )
+        }
+        sx={{
+          py: 1.5,
+          fontSize: '1rem',
+          fontWeight: 600,
+          borderWidth: 2,
+          '&:hover': {
+            borderWidth: 2,
+            bgcolor: 'warning.lighter',
+          },
+        }}
+      >
+        {isDemoLogin ? 'Logging in...' : 'Demo Login (Hackathon)'}
+      </Button>
+
+      <Alert severity="info" sx={{ borderRadius: 2 }}>
+        <Typography variant="caption" sx={{ display: 'block', mb: 0.5, fontWeight: 600 }}>
+          🎯 Hackathon Demo Mode
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          For testing purposes only. Uses a pre-configured demo wallet without requiring Casper
+          Wallet extension.
+        </Typography>
+      </Alert>
 
       <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', mt: 2 }}>
         Supported wallet:

@@ -345,22 +345,22 @@ export function MerchantDetailsView({ id }: Props) {
           {
             label: 'API Documentation',
             icon: <Iconify icon="solar:book-bold" />,
-            href: '/docs/api',
+            href: 'https://docs.caspay.link/docs/api-reference/',
           },
           {
             label: 'Integration Guide',
             icon: <Iconify icon="solar:code-bold" />,
-            href: '/docs/integration',
+            href: 'https://docs.caspay.link/docs/guides/products/',
           },
           {
             label: 'Webhook Events',
             icon: <Iconify icon="solar:notification-bold" />,
-            href: '/docs/webhooks',
+            href: 'https://docs.caspay.link/docs/guides/webhooks/',
           },
           {
             label: 'SDK & Libraries',
             icon: <Iconify icon="solar:programming-bold" />,
-            href: '/docs/sdk',
+            href: 'https://docs.caspay.link/docs/sdk/javascript/',
           },
         ].map((item) => (
           <Link
