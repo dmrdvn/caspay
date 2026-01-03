@@ -3,7 +3,6 @@ import type { IProductItem } from 'src/types/product';
 import { useEffect } from 'react';
 
 import Box from '@mui/material/Box';
-import Avatar from '@mui/material/Avatar';
 
 import { Image } from 'src/components/image';
 import { Lightbox, useLightbox } from 'src/components/lightbox';
@@ -82,26 +81,19 @@ export function ProductDetailsCarousel({ images, productName }: Props) {
             <Box
               sx={{
                 borderRadius: 2,
-                bgcolor: 'background.neutral',
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 minHeight: 320,
                 aspectRatio: '1/1',
+                fontSize: '8rem',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
               }}
             >
-              <Avatar
-                variant="rounded"
-                sx={{
-                  width: 160,
-                  height: 160,
-                  fontSize: '3rem',
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                }}
-              >
-                {productInitials}
-              </Avatar>
+              {productInitials}
             </Box>
           )}
         </Box>
