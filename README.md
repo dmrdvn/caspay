@@ -124,6 +124,33 @@ const payment = await caspay.payments.create({
 
 **No blockchain expertise required. No complex setup. Just install, configure, and start tracking.**
 
+## 🎮 Live Demos
+
+Try CasPay SDK in action with our interactive demos:
+
+- **HTML Demo**: [https://caspay.link/demo.html](https://caspay.link/demo.html)
+- **Next.js Demo**: [https://caspay.link/demo-next/](https://caspay.link/demo-next/)
+
+### How to Use Demos
+
+**Get Your Credentials from Dashboard:**
+
+1. **Merchant ID** - Go to Dashboard > Merchant page
+2. **API Key** - Go to Dashboard > Merchant page > API Integration section
+3. **Product ID** - Go to Dashboard > Products > Create a product
+4. **Plan ID** - Go to Dashboard > Subscription Plans > Create a plan
+
+**Demo Parameters:**
+
+- `senderAddress` - Any wallet address (for testing)
+- `transactionHash` - Mock hash in demo, real payment hash in production
+- `productId` - Get from Products page after creating a product
+- `planId` - Get from Subscription Plans page after creating a plan
+
+**Check Subscription:**
+
+Use the "Check Subscription" feature to query existing subscription status by merchant ID and sender address.
+
 ## 🎯 Key Features
 
 ### For Merchants
