@@ -452,6 +452,13 @@
       btn.disabled = true;
 
       try {
+        const caspay = initCasPay();
+        if (!caspay) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
         const payment = await caspay.payments.create({
           senderAddress: document.getElementById('productSender').value,
           transactionHash: document.getElementById('productTxHash').value,
