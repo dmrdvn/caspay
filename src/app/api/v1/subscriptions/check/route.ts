@@ -33,7 +33,14 @@ export async function GET(req: NextRequest) {
     if (isValidationError(merchant)) {
       return NextResponse.json(
         { error: merchant.error, code: merchant.code },
-        { status: merchant.status }
+        { 
+          status: merchant.status,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
       );
     }
 
@@ -54,7 +61,12 @@ export async function GET(req: NextRequest) {
         },
         { 
           status: 429,
-          headers: rateLimitHeaders
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
         }
       );
     }
@@ -72,7 +84,15 @@ export async function GET(req: NextRequest) {
           error: 'Missing required parameters: merchant_id, subscriber',
           code: 'INVALID_REQUEST'
         },
-        { status: 400, headers: rateLimitHeaders }
+        { 
+          status: 400,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
       );
     }
 
@@ -83,7 +103,15 @@ export async function GET(req: NextRequest) {
           error: 'Invalid merchant_id format',
           code: 'INVALID_MERCHANT_ID'
         },
-        { status: 400, headers: rateLimitHeaders }
+        { 
+          status: 400,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
       );
     }
 
@@ -93,7 +121,15 @@ export async function GET(req: NextRequest) {
           error: 'Invalid subscriber address format',
           code: 'INVALID_SUBSCRIBER'
         },
-        { status: 400, headers: rateLimitHeaders }
+        { 
+          status: 400,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
       );
     }
 
@@ -103,7 +139,15 @@ export async function GET(req: NextRequest) {
           error: 'Invalid plan_id format',
           code: 'INVALID_PLAN_ID'
         },
-        { status: 400, headers: rateLimitHeaders }
+        { 
+          status: 400,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
       );
     }
 
@@ -114,7 +158,15 @@ export async function GET(req: NextRequest) {
           error: 'merchant_id does not match authenticated merchant',
           code: 'MERCHANT_MISMATCH'
         },
-        { status: 403, headers: rateLimitHeaders }
+        { 
+          status: 403,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
       );
     }
 
@@ -167,7 +219,15 @@ export async function GET(req: NextRequest) {
             message: 'Plan not found',
             responseTime: `${Date.now() - startTime}ms`
           },
-          { status: 200, headers: rateLimitHeaders }
+          { 
+            status: 200,
+            headers: {
+              ...rateLimitHeaders,
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+            }
+          }
         );
       }
     }
@@ -187,7 +247,15 @@ export async function GET(req: NextRequest) {
           error: 'Failed to query subscriptions',
           code: 'QUERY_FAILED'
         },
-        { status: 500, headers: rateLimitHeaders }
+        { 
+          status: 500,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
       );
     }
 
@@ -201,7 +269,15 @@ export async function GET(req: NextRequest) {
           message: 'No active subscriptions found',
           responseTime: `${responseTime}ms`
         },
-        { status: 200, headers: rateLimitHeaders }
+        { 
+          status: 200,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
       );
     }
 
@@ -234,7 +310,15 @@ export async function GET(req: NextRequest) {
         count: subscriptions.length,
         responseTime: `${responseTime}ms`
       },
-      { status: 200, headers: rateLimitHeaders }
+      { 
+        status: 200,
+        headers: {
+          ...rateLimitHeaders,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+        }
+      }
     );
 
   } catch (error: any) {
@@ -244,7 +328,14 @@ export async function GET(req: NextRequest) {
         error: error.message || 'Internal server error',
         code: 'INTERNAL_ERROR'
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+        }
+      }
     );
   }
 }

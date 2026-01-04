@@ -292,7 +292,10 @@ export async function POST(req: NextRequest) {
                 error: 'Failed to renew subscription. Please try again.',
                 code: 'SUBSCRIPTION_RENEWAL_FAILED'
               },
-              { status: 500, headers: rateLimitHeaders }
+              { 
+                status: 500,
+                headers: addCorsHeaders(rateLimitHeaders)
+              }
             );
           }
 
@@ -328,7 +331,10 @@ export async function POST(req: NextRequest) {
                 error: 'Failed to reactivate subscription. Please try again.',
                 code: 'SUBSCRIPTION_REACTIVATION_FAILED'
               },
-              { status: 500, headers: rateLimitHeaders }
+              { 
+                status: 500,
+                headers: addCorsHeaders(rateLimitHeaders)
+              }
             );
           }
 
