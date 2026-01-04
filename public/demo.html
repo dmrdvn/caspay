@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CasPay SDK Demo - Interactive Payment Testing</title>
+  <title>CasPay SDK Html Demo - Interactive Payment Testing</title>
   <style>
     * {
       margin: 0;
@@ -423,7 +423,7 @@
   </div>
 
   <!-- Load CasPay SDK from CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@caspay/sdk@1.0.1/dist/caspay.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@caspay/sdk@1.0.4/dist/caspay.min.js"></script>
   
   <script>
     // Initialize CasPay SDK
@@ -438,8 +438,7 @@
 
       return new CasPay({
         apiKey,
-        merchantId,
-        baseUrl: 'https://api.caspay.link'
+        merchantId
       });
     }
 
@@ -526,7 +525,7 @@
       const subscriber = document.getElementById('subscriberAddress').value;
       const planId = document.getElementById('checkPlanId').value;
       
-      let url = `https://api.caspay.link/api/v1/subscriptions/check/?merchant_id=${merchantId}&subscriber=${subscriber}`;
+      let url = `https://caspay.link/api/v1/subscriptions/check/?merchant_id=${merchantId}&subscriber=${subscriber}`;
       if (planId) {
         url += `&plan_id=${planId}`;
       }

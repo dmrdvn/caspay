@@ -1,16 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "api.caspay.link"
-        }
-      ],
-      "destination": "/api/:path*"
-    }
-  ],
   "headers": [
     {
       "source": "/api/:path*",

@@ -40,10 +40,10 @@ export default function APIReferencePage() {
         <Card sx={{ bgcolor: 'grey.800', color: 'common.white', position: 'relative' }}>
           <CardContent>
             <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-              <CopyButton text="https://api.caspaylink.com/v1" />
+              <CopyButton text="https://caspay.link/api/v1" />
             </Box>
             <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-              https://api.caspaylink.com/v1
+              https://caspay.link/api/v1
             </Typography>
           </CardContent>
         </Card>

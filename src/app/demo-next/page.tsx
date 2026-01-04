@@ -94,8 +94,7 @@ export default function DemoNext() {
         }
         return new window.CasPay({
             apiKey,
-            merchantId,
-            baseUrl: process.env.NODE_ENV === 'development' ? 'http://localhost:8082' : 'https://api.caspay.link'
+            merchantId
         });
     };
 
@@ -148,7 +147,7 @@ export default function DemoNext() {
             return;
         }
 
-        let url = `${process.env.NODE_ENV === 'development' ? 'http://localhost:8082' : 'https://api.caspay.link'}/api/v1/subscriptions/check/?merchant_id=${merchantId}&subscriber=${data.subscriberAddress}`;
+        let url = `${process.env.NODE_ENV === 'development' ? 'http://localhost:8082' : 'https://caspay.link'}/api/v1/subscriptions/check/?merchant_id=${merchantId}&subscriber=${data.subscriberAddress}`;
         if (data.planId) {
             url += `&plan_id=${data.planId}`;
         }
@@ -171,7 +170,7 @@ export default function DemoNext() {
     return (
         <>
             <Script
-                src="https://cdn.jsdelivr.net/npm/@caspay/sdk@1.0.1/dist/caspay.min.js"
+                src="https://cdn.jsdelivr.net/npm/@caspay/sdk@1.0.4/dist/caspay.min.js"
                 onLoad={handleSdkLoad}
             />
 

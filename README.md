@@ -193,7 +193,7 @@ Use the "Check Subscription" feature to query existing subscription status by me
 ## 🌐 Platform Links
 
 - **Dashboard**: https://caspay.link/dashboard
-- **API**: https://api.caspay.link
+- **API**: https://caspay.link/api
 - **Website**: https://caspay.link
 
 ## 📝 License

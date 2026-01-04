@@ -508,7 +508,7 @@ function init_caspay_gateway() {
             $order = wc_get_order($order_id);
             
             // Send request to CasPay API
-            $response = wp_remote_post('https://api.caspaylink.com/v1/payments', array(
+            $response = wp_remote_post('https://caspaylink.com/api/v1/payments', array(
                 'headers' => array(
                     'Authorization' => 'Bearer ' . $this->api_key,
                     'Content-Type' => 'application/json'
