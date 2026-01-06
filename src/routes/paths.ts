@@ -15,6 +15,11 @@ export const paths = {
   components: '/components',
   demo: '/demo-2',
   
+  // Public payment page
+  payment: {
+    page: (slug: string) => `/pay/${slug}`,
+  },
+  
   // AUTH
   auth: {
     casper: {
@@ -60,9 +65,12 @@ export const paths = {
       details: (id: string) => `${ROOTS.DASHBOARD}/transaction/${id}`,
     },
     
-    // Payment Links
-    paymentLink: {
-      root: `${ROOTS.DASHBOARD}/payment-link`,
+    // PayLinks
+    payLink: {
+      root: `${ROOTS.DASHBOARD}/paylinks`,
+      new: `${ROOTS.DASHBOARD}/paylinks/new`,
+      details: (id: string) => `${ROOTS.DASHBOARD}/paylinks/${id}`,
+      edit: (id: string) => `${ROOTS.DASHBOARD}/paylinks/${id}/edit`,
     },
   },
 };

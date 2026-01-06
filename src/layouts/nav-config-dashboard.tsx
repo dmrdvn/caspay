@@ -95,15 +95,14 @@ export const navData: NavSectionProps['data'] = [
           { title: 'Create New Plan', path: paths.dashboard.subscription.new },
         ],
       },
-       {
-        title: 'Payment Links',
-        path: paths.dashboard.paymentLink.root,
+      {
+        title: 'PayLinks',
+        path: paths.dashboard.payLink.root,
         icon: ICONS.external,
-        info: (
-          <Label color="warning" variant="soft">
-            SOON
-          </Label>
-        ),
+        children: [
+          { title: 'List PayLinks', path: paths.dashboard.payLink.root },
+          { title: 'Create PayLink', path: paths.dashboard.payLink.new },
+        ],
       },
 
     ],

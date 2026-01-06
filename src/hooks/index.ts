@@ -5,3 +5,4 @@ export * from './use-merchants';
 export * from './use-transactions';
 export * from './use-subscription-plans';
 export * from './use-merchant-analytics';
+export * from './use-paylinks';

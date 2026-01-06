@@ -1,0 +1,199 @@
+'use client';
+
+import type { SWRConfiguration } from 'swr';
+import useSWR, { mutate } from 'swr';
+import { useMemo, useCallback } from 'react';
+
+import type {
+  PayLink,
+  PayLinkWithProduct,
+  PayLinkCreateInput,
+  PayLinkUpdateInput,
+  CreatePayLinkResponse,
+} from 'src/types/paylink';
+
+import {
+  createPayLink as createPayLinkAction,
+  updatePayLink as updatePayLinkAction,
+  deletePayLink as deletePayLinkAction,
+  getPayLinks as getPayLinksAction,
+  getPayLink as getPayLinkAction,
+} from 'src/actions/paylink';
+
+import { useAuthContext } from 'src/auth/hooks';
+
+// ----------------------------------------------------------------------
+
+const SWR_OPTIONS: SWRConfiguration = {
+  revalidateOnFocus: true,
+  revalidateOnReconnect: true,
+  dedupingInterval: 5000,
+  errorRetryCount: 3,
+  errorRetryInterval: 3000,
+};
+
+// ----------------------------------------------------------------------
+
+/**
+ * Fetch all PayLinks for a merchant
+ */
+async function fetchPayLinks(merchantId: string | undefined): Promise<PayLinkWithProduct[]> {
+  if (!merchantId) return [];
+
+  try {
+    return await getPayLinksAction(merchantId);
+  } catch (error) {
+    console.error('[fetchPayLinks] Error:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch single PayLink by ID
+ */
+async function fetchPayLink(id: string | undefined, merchantId: string | undefined): Promise<PayLinkWithProduct | null> {
+  if (!id || !merchantId) return null;
+
+  try {
+    return await getPayLinkAction(id, merchantId);
+  } catch (error) {
+    console.error('[fetchPayLink] Error:', error);
+    throw error;
+  }
+}
+
+// ----------------------------------------------------------------------
+
+/**
+ * Hook to get all PayLinks for merchant
+ */
+export function usePayLinks(merchantId?: string | null) {
+  const { data, error, isLoading, isValidating, mutate: revalidate } = useSWR<PayLinkWithProduct[]>(
+    merchantId ? ['paylinks', merchantId] : null,
+    () => fetchPayLinks(merchantId || undefined),
+    SWR_OPTIONS
+  );
+
+  const memoizedValue = useMemo(
+    () => ({
+      paylinks: data || [],
+      isLoading,
+      isValidating,
+      error,
+      isEmpty: !isLoading && !data?.length,
+      refetch: revalidate,
+    }),
+    [data, isLoading, isValidating, error, revalidate]
+  );
+
+  return memoizedValue;
+}
+
+/**
+ * Hook to get single PayLink by ID
+ */
+export function usePayLink(id: string | null, merchantId?: string | null) {
+  const { data, error, isLoading, isValidating, mutate: revalidate } = useSWR<PayLinkWithProduct | null>(
+    id && merchantId ? ['paylink', id, merchantId] : null,
+    () => fetchPayLink(id || undefined, merchantId || undefined),
+    SWR_OPTIONS
+  );
+
+  const memoizedValue = useMemo(
+    () => ({
+      paylink: data || null,
+      isLoading,
+      isValidating,
+      error,
+      refetch: revalidate,
+    }),
+    [data, isLoading, isValidating, error, revalidate]
+  );
+
+  return memoizedValue;
+}
+
+// ----------------------------------------------------------------------
+
+/**
+ * Hook for PayLink mutations (create, update, delete)
+ */
+export function usePayLinkMutations(merchantId?: string | null) {
+  const { user } = useAuthContext();
+  const userId = user?.id;
+
+  const createMutation = useCallback(
+    async (input: Omit<PayLinkCreateInput, 'merchant_id'>): Promise<CreatePayLinkResponse> => {
+      if (!userId || !merchantId) {
+        throw new Error('User not authenticated');
+      }
+
+      try {
+        const result = await createPayLinkAction({
+          ...input,
+          merchant_id: merchantId,
+        });
+        
+        // Revalidate PayLinks list
+        await mutate(['paylinks', merchantId]);
+
+        return result;
+      } catch (error) {
+        console.error('[createPayLink] Error:', error);
+        throw error;
+      }
+    },
+    [userId, merchantId]
+  );
+
+  const updateMutation = useCallback(
+    async (id: string, input: PayLinkUpdateInput): Promise<PayLink> => {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      try {
+        const result = await updatePayLinkAction(id, input);
+
+        // Revalidate cache
+        await Promise.all([
+          merchantId ? mutate(['paylinks', merchantId]) : Promise.resolve(),
+          mutate(['paylink', id, merchantId]),
+        ]);
+
+        return result;
+      } catch (error) {
+        console.error('[updatePayLink] Error:', error);
+        throw error;
+      }
+    },
+    [userId, merchantId]
+  );
+
+  const deleteMutation = useCallback(
+    async (id: string): Promise<void> => {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      try {
+        await deletePayLinkAction(id);
+
+        // Revalidate PayLinks list
+        if (merchantId) {
+          await mutate(['paylinks', merchantId]);
+        }
+      } catch (error) {
+        console.error('[deletePayLink] Error:', error);
+        throw error;
+      }
+    },
+    [userId, merchantId]
+  );
+
+  return {
+    createPayLink: createMutation,
+    updatePayLink: updateMutation,
+    deletePayLink: deleteMutation,
+  };
+}

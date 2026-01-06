@@ -25,6 +25,11 @@ export type TransactionItem = {
   payment_type: 'product' | 'subscription';
   invoice_number: string | null;
   invoice_url: string | null;
+  
+  // PayLink Support
+  paylink_id: string | null;
+  payment_source: 'sdk' | 'paylink_wallet' | 'paylink_fiat';
+  
   metadata: {
     product_name?: string;
     plan_name?: string;
@@ -109,6 +114,11 @@ export async function getTransactions(): Promise<TransactionItem[]> {
     payment_type: payment.payment_type,
     invoice_number: payment.invoice_number,
     invoice_url: payment.invoice_url,
+    
+    // PayLink fields
+    paylink_id: payment.paylink_id || null,
+    payment_source: payment.payment_source || 'sdk',
+    
     metadata: payment.payment_metadata,
     created_at: payment.payment_created_at,
     
@@ -183,6 +193,11 @@ export async function getTransaction(transactionId: string): Promise<Transaction
     payment_type: data.payment_type,
     invoice_number: data.invoice_number,
     invoice_url: data.invoice_url,
+    
+    // PayLink fields
+    paylink_id: data.paylink_id || null,
+    payment_source: data.payment_source || 'sdk',
+    
     metadata: data.payment_metadata,
     created_at: data.payment_created_at,
     
