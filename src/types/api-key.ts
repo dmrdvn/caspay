@@ -1,4 +1,3 @@
-// ----------------------------------------------------------------------
 
 export type ApiKeyEnvironment = 'live' | 'test';
 
@@ -20,8 +19,8 @@ export type ApiKey = {
   merchant_id: string;
   name: string;
   key_prefix: ApiKeyPrefix;
-  key_hash: string; // Hashed key (not exposed to client)
-  key_hint: string; // Masked key for display (e.g., 'cp_live_****x2m7')
+  key_hash: string; 
+  key_hint: string; 
   permissions: ApiKeyPermissions;
   last_used_at: string | null;
   expires_at: string | null;
@@ -55,7 +54,7 @@ export type UpdateApiKeyInput = {
  * API Key with plain key (only returned on creation)
  */
 export type ApiKeyWithSecret = ApiKey & {
-  key: string; // Plain text key (only shown once)
+  key: string; 
 };
 
 /**

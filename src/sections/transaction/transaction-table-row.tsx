@@ -1,4 +1,4 @@
-import type { TransactionItem } from 'src/actions/transaction';
+import type { TransactionItem } from 'src/types/transaction';
 
 import { usePopover } from 'minimal-shared/hooks';
 

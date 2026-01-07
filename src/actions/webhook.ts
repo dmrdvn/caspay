@@ -12,13 +12,6 @@ import { generateWebhookSecret } from 'src/utils/webhook';
 
 import { supabase } from 'src/lib/supabase';
 
-// ----------------------------------------------------------------------
-
-/**
- * Get all webhook endpoints for a merchant
- * @param merchantId - Merchant ID
- * @returns List of webhook endpoints
- */
 export async function getWebhookEndpoints(merchantId: string): Promise<WebhookEndpoint[]> {
   const { data, error } = await supabase
     .from('webhook_endpoints')
@@ -34,11 +27,6 @@ export async function getWebhookEndpoints(merchantId: string): Promise<WebhookEn
   return data as WebhookEndpoint[];
 }
 
-/**
- * Get a single webhook endpoint by ID
- * @param endpointId - Webhook endpoint ID
- * @returns Webhook endpoint details
- */
 export async function getWebhookEndpointById(endpointId: string): Promise<WebhookEndpoint> {
   const { data, error } = await supabase
     .from('webhook_endpoints')
@@ -54,18 +42,11 @@ export async function getWebhookEndpointById(endpointId: string): Promise<Webhoo
   return data as WebhookEndpoint;
 }
 
-/**
- * Create a new webhook endpoint
- * @param input - Webhook creation input
- * @returns Newly created webhook endpoint
- */
 export async function createWebhookEndpoint(input: CreateWebhookInput): Promise<WebhookEndpoint> {
   const { merchant_id, url, description, events } = input;
 
-  // Generate webhook secret
   const secret = generateWebhookSecret();
 
-  // Insert into database
   const { data, error } = await supabase
     .from('webhook_endpoints')
     .insert({
@@ -87,12 +68,6 @@ export async function createWebhookEndpoint(input: CreateWebhookInput): Promise<
   return data as WebhookEndpoint;
 }
 
-/**
- * Update an existing webhook endpoint
- * @param endpointId - Webhook endpoint ID
- * @param input - Update input
- * @returns Updated webhook endpoint
- */
 export async function updateWebhookEndpoint(
   endpointId: string,
   input: UpdateWebhookInput
@@ -112,10 +87,6 @@ export async function updateWebhookEndpoint(
   return data as WebhookEndpoint;
 }
 
-/**
- * Delete a webhook endpoint
- * @param endpointId - Webhook endpoint ID
- */
 export async function deleteWebhookEndpoint(endpointId: string): Promise<void> {
   const { error } = await supabase.from('webhook_endpoints').delete().eq('id', endpointId);
 
@@ -125,13 +96,8 @@ export async function deleteWebhookEndpoint(endpointId: string): Promise<void> {
   }
 }
 
-/**
- * Toggle webhook endpoint active status
- * @param endpointId - Webhook endpoint ID
- * @returns Updated webhook endpoint
- */
 export async function toggleWebhookStatus(endpointId: string): Promise<WebhookEndpoint> {
-  // Get current status
+
   const { data: currentEndpoint, error: fetchError } = await supabase
     .from('webhook_endpoints')
     .select('active')
@@ -142,15 +108,10 @@ export async function toggleWebhookStatus(endpointId: string): Promise<WebhookEn
     throw new Error('Failed to fetch current webhook endpoint');
   }
 
-  // Toggle status
   return updateWebhookEndpoint(endpointId, { active: !currentEndpoint.active });
 }
 
-/**
- * Regenerate webhook secret
- * @param endpointId - Webhook endpoint ID
- * @returns Updated webhook endpoint with new secret
- */
+
 export async function regenerateWebhookSecret(endpointId: string): Promise<WebhookEndpoint> {
   const newSecret = generateWebhookSecret();
 
@@ -169,19 +130,11 @@ export async function regenerateWebhookSecret(endpointId: string): Promise<Webho
   return data as WebhookEndpoint;
 }
 
-/**
- * Test a webhook endpoint by sending a test event
- * @param endpointId - Webhook endpoint ID
- * @returns Test result with response details
- */
 export async function testWebhookEndpoint(endpointId: string): Promise<WebhookTestResult> {
   const startTime = Date.now();
 
   try {
-    // Get endpoint details
     const endpoint = await getWebhookEndpointById(endpointId);
-
-    // Create test payload
     const testPayload = {
       id: 'evt_test_' + Math.random().toString(36).substring(2, 10),
       type: 'test.webhook',
@@ -194,7 +147,6 @@ export async function testWebhookEndpoint(endpointId: string): Promise<WebhookTe
       },
     };
 
-    // Send POST request to webhook URL
     const response = await fetch(endpoint.url, {
       method: 'POST',
       headers: {
@@ -226,12 +178,6 @@ export async function testWebhookEndpoint(endpointId: string): Promise<WebhookTe
   }
 }
 
-/**
- * Get webhook delivery logs for an endpoint
- * @param endpointId - Webhook endpoint ID
- * @param limit - Maximum number of deliveries to return (default: 50)
- * @returns List of webhook deliveries
- */
 export async function getWebhookDeliveries(
   endpointId: string,
   limit: number = 50
@@ -251,17 +197,11 @@ export async function getWebhookDeliveries(
   return data as WebhookDelivery[];
 }
 
-/**
- * Get recent webhook deliveries for all endpoints of a merchant
- * @param merchantId - Merchant ID
- * @param limit - Maximum number of deliveries to return (default: 50)
- * @returns List of webhook deliveries
- */
 export async function getRecentWebhookDeliveries(
   merchantId: string,
   limit: number = 50
 ): Promise<WebhookDelivery[]> {
-  // First get all endpoint IDs for this merchant
+
   const { data: endpoints, error: endpointsError } = await supabase
     .from('webhook_endpoints')
     .select('id')
@@ -273,7 +213,6 @@ export async function getRecentWebhookDeliveries(
 
   const endpointIds = endpoints.map((e) => e.id);
 
-  // Get deliveries for these endpoints
   const { data, error } = await supabase
     .from('webhook_deliveries')
     .select('*')
@@ -289,13 +228,8 @@ export async function getRecentWebhookDeliveries(
   return data as WebhookDelivery[];
 }
 
-/**
- * Retry a failed webhook delivery
- * @param deliveryId - Webhook delivery ID
- * @returns Updated delivery record
- */
 export async function retryWebhookDelivery(deliveryId: string): Promise<WebhookDelivery> {
-  // Get delivery details
+
   const { data: delivery, error: fetchError } = await supabase
     .from('webhook_deliveries')
     .select('*, webhook_endpoints(*)')
@@ -306,8 +240,6 @@ export async function retryWebhookDelivery(deliveryId: string): Promise<WebhookD
     throw new Error('Failed to fetch webhook delivery');
   }
 
-  // TODO: Implement actual retry logic with webhook sending
-  // For now, just increment attempt count
   const { data, error } = await supabase
     .from('webhook_deliveries')
     .update({

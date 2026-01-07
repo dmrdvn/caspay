@@ -1,74 +1,13 @@
 'use server';
 
+import type {
+  MonthlyActivity,
+  MerchantAnalytics,
+  TopPerformingItem,
+  RecentTransaction,
+} from 'src/types/merchant-analytics';
 
 import { createClient } from 'src/lib/supabase';
-
-// ----------------------------------------------------------------------
-
-export type MerchantAnalytics = {
-  id: string;
-  user_id: string;
-  merchant_id: string;
-  store_name: string;
-  wallet_address: string;
-  merchant_status: string;
-  accepted_tokens: string[];
-  total_products: number;
-  active_products: number;
-  inactive_products: number;
-  total_subscription_plans: number;
-  active_plans: number;
-  inactive_plans: number;
-  active_subscriptions: number;
-  cancelled_subscriptions: number;
-  expired_subscriptions: number;
-  total_subscriptions: number;
-  total_payments: number;
-  successful_payments: number;
-  failed_payments: number;
-  pending_payments: number;
-  product_sales: number;
-  subscription_charges: number;
-  total_customers: number;
-  total_subscribers: number;
-  total_revenue_usd: number;
-  total_revenue_native: number;
-  monthly_revenue_usd: number;
-  monthly_revenue_native: number;
-  success_rate: number;
-  merchant_created_at: string;
-  last_payment_at: string | null;
-  last_successful_payment_at: string | null;
-};
-
-export type TopPerformingItem = {
-  id: string;
-  name: string;
-  type: 'product' | 'subscription_plan';
-  price: number;
-  sales_count: number;
-  total_revenue: number;
-  image_url: string | null;
-};
-
-export type RecentTransaction = {
-  id: string;
-  payment_id: string;
-  type: 'order1' | 'order2' | 'order3' | 'order4';
-  title: string;
-  time: string;
-  amount: number;
-  status: string;
-};
-
-export type MonthlyActivity = {
-  month: string;
-  products_sold: number;
-  new_subscriptions: number;
-  cancellations: number;
-};
-
-// ----------------------------------------------------------------------
 
 export async function getMerchantAnalytics(
   merchantId: string
@@ -91,8 +30,6 @@ export async function getMerchantAnalytics(
   }
 }
 
-// ----------------------------------------------------------------------
-
 export async function getTopPerformingItems(
   merchantId: string,
   limit: number = 10
@@ -100,7 +37,6 @@ export async function getTopPerformingItems(
   try {
     const supabase = await createClient();
 
-    // Get products with their sales count from payments
     const { data: topProducts, error: productsError } = await supabase
       .from('products')
       .select('id, product_id, name, price, image_url')
@@ -111,7 +47,6 @@ export async function getTopPerformingItems(
 
     if (productsError) throw productsError;
 
-    // Get subscription plans
     const { data: topPlans, error: plansError } = await supabase
       .from('subscription_plans')
       .select('id, plan_id, name, price')
@@ -122,11 +57,9 @@ export async function getTopPerformingItems(
 
     if (plansError) throw plansError;
 
-    // Get payment counts for products
     const productIds = (topProducts || []).map((p) => p.id);
     const planIds = (topPlans || []).map((p) => p.id);
 
-    // Get product payment stats
     const { data: productPayments, error: productPaymentsError } = await supabase
       .from('payments')
       .select('product_id, usd_value')
@@ -137,7 +70,6 @@ export async function getTopPerformingItems(
 
     if (productPaymentsError) throw productPaymentsError;
 
-    // Get subscription payment stats
     const { data: subPayments, error: subPaymentsError } = await supabase
       .from('payments')
       .select('subscription_plan_id, usd_value')
@@ -148,7 +80,6 @@ export async function getTopPerformingItems(
 
     if (subPaymentsError) throw subPaymentsError;
 
-    // Calculate sales count and revenue for products
     const productStats = new Map<string, { count: number; revenue: number }>();
     (productPayments || []).forEach((p) => {
       const current = productStats.get(p.product_id) || { count: 0, revenue: 0 };
@@ -158,7 +89,6 @@ export async function getTopPerformingItems(
       });
     });
 
-    // Calculate sales count and revenue for plans
     const planStats = new Map<string, { count: number; revenue: number }>();
     (subPayments || []).forEach((p) => {
       const current = planStats.get(p.subscription_plan_id) || { count: 0, revenue: 0 };
@@ -168,7 +98,6 @@ export async function getTopPerformingItems(
       });
     });
 
-    // Combine and format results
     const items: TopPerformingItem[] = [
       ...(topProducts || []).map((product) => {
         const stats = productStats.get(product.id) || { count: 0, revenue: 0 };
@@ -196,7 +125,6 @@ export async function getTopPerformingItems(
       }),
     ];
 
-    // Sort by sales count descending
     items.sort((a, b) => b.sales_count - a.sales_count);
 
     return { data: items.slice(0, limit), error: null };
@@ -205,8 +133,6 @@ export async function getTopPerformingItems(
     return { data: [], error: error as Error };
   }
 }
-
-// ----------------------------------------------------------------------
 
 export async function getRecentTransactions(
   merchantId: string,
@@ -224,7 +150,6 @@ export async function getRecentTransactions(
 
     if (error) throw error;
 
-    // Format transactions
     const transactions: RecentTransaction[] = (payments || []).map((payment, index) => {
       const typeMap = ['order1', 'order2', 'order3', 'order4'] as const;
       const title =
@@ -250,8 +175,6 @@ export async function getRecentTransactions(
   }
 }
 
-// ----------------------------------------------------------------------
-
 export async function getMonthlyActivity(
   merchantId: string,
   year: number = 2025
@@ -259,7 +182,6 @@ export async function getMonthlyActivity(
   try {
     const supabase = await createClient();
 
-    // Get monthly product sales
     const { data: productSales, error: productError } = await supabase
       .from('payment_analytics')
       .select('payment_created_at')
@@ -271,7 +193,6 @@ export async function getMonthlyActivity(
 
     if (productError) throw productError;
 
-    // Get monthly new subscriptions
     const { data: newSubs, error: subsError } = await supabase
       .from('subscriptions')
       .select('created_at')
@@ -281,7 +202,6 @@ export async function getMonthlyActivity(
 
     if (subsError) throw subsError;
 
-    // Get monthly cancellations
     const { data: cancelled, error: cancelError } = await supabase
       .from('subscriptions')
       .select('updated_at, status')
@@ -292,7 +212,6 @@ export async function getMonthlyActivity(
 
     if (cancelError) throw cancelError;
 
-    // Aggregate by month
     const months = [
       'Jan',
       'Feb',

@@ -1,7 +1,3 @@
-/**
- * PayLink Types
- * One-time payment links for products
- */
 
 export interface PayLink {
   id: string;

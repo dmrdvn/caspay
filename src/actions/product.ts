@@ -2,17 +2,9 @@
 
 import type { Product, ProductCreateInput, ProductUpdateInput } from 'src/types/product';
 
-import { createClient } from 'src/lib/supabase';
+import { supabase } from 'src/lib/supabase';
 
-
-// ----------------------------------------------------------------------
-
-/**
- * Get all products for a specific merchant
- */
 export async function getProductsByMerchant(merchantId: string): Promise<Product[]> {
-  const supabase = await createClient();
-
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -27,12 +19,7 @@ export async function getProductsByMerchant(merchantId: string): Promise<Product
   return data as Product[];
 }
 
-/**
- * Get a single product by ID
- */
 export async function getProductById(productId: string): Promise<Product | null> {
-  const supabase = await createClient();
-
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -41,7 +28,6 @@ export async function getProductById(productId: string): Promise<Product | null>
 
   if (error) {
     if (error.code === 'PGRST116') {
-      // Not found
       return null;
     }
     console.error('Error fetching product:', error);
@@ -51,19 +37,13 @@ export async function getProductById(productId: string): Promise<Product | null>
   return data as Product;
 }
 
-/**
- * Create a new product
- */
 export async function createProduct(input: ProductCreateInput): Promise<Product> {
-  const supabase = await createClient();
-
-  // Generate unique product_id if not provided
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 9);
   const productId = input.product_id || `prod_${timestamp}_${random}`;
 
   const productData = {
-    merchant_id: input.merchant_id, // Foreign key (UUID) for Supabase relations
+    merchant_id: input.merchant_id,
     product_id: productId,
     name: input.name,
     description: input.description || null,
@@ -92,12 +72,9 @@ export async function createProduct(input: ProductCreateInput): Promise<Product>
     throw new Error(error.message);
   }
 
-  // Step 2: Write to blockchain contract
   try {
-    // Dynamic import to keep contract code server-side only
     const { createProduct: createProductOnChain } = await import('src/lib/api/contract-service');
     
-    // Merchant'ın custom merchant_id'si zaten data'da var (JOIN ile)
     const merchantCustomId = (data as any).merchant?.merchant_id;
     
     if (!merchantCustomId) {
@@ -105,15 +82,15 @@ export async function createProduct(input: ProductCreateInput): Promise<Product>
     }
     
     console.log('[createProduct] Registering on blockchain...', {
-      productId: data.product_id, // Custom product_id (prod_xxx)
-      merchantCustomId, // MERCH_xxx
-      price: data.price // Orijinal price
+      productId: data.product_id,
+      merchantCustomId,
+      price: data.price
     });
     
     const deployHash = await createProductOnChain(
-      merchantCustomId, // MERCH_xxx - contract için
-      data.product_id, // Custom product_id (prod_xxx) - NOT data.id!
-      data.price.toString() // Orijinal price as string - NO conversion!
+      merchantCustomId,
+      data.product_id,
+      data.price.toString()
     );
     
     console.log('[createProduct] Blockchain registration successful:', deployHash);
@@ -131,20 +108,14 @@ export async function createProduct(input: ProductCreateInput): Promise<Product>
   return data as Product;
 }
 
-/**
- * Update a product
- */
 export async function updateProduct(
   productId: string,
   input: ProductUpdateInput
 ): Promise<Product> {
-  const supabase = await createClient();
-
   const updateData: any = {
     updated_at: new Date().toISOString(),
   };
 
-  // Only include fields that are provided
   if (input.name !== undefined) updateData.name = input.name;
   if (input.description !== undefined) updateData.description = input.description;
   if (input.price !== undefined) updateData.price = input.price;
@@ -172,12 +143,7 @@ export async function updateProduct(
   return data as Product;
 }
 
-/**
- * Delete a product (soft delete by setting active = false)
- */
 export async function deleteProduct(productId: string): Promise<void> {
-  const supabase = await createClient();
-
   const { error } = await supabase
     .from('products')
     .update({ active: false, updated_at: new Date().toISOString() })
@@ -189,12 +155,7 @@ export async function deleteProduct(productId: string): Promise<void> {
   }
 }
 
-/**
- * Hard delete a product (permanent)
- */
 export async function hardDeleteProduct(productId: string): Promise<void> {
-  const supabase = await createClient();
-
   const { error } = await supabase.from('products').delete().eq('id', productId);
 
   if (error) {
@@ -203,13 +164,7 @@ export async function hardDeleteProduct(productId: string): Promise<void> {
   }
 }
 
-/**
- * Toggle product active status
- */
 export async function toggleProductStatus(productId: string): Promise<Product> {
-  const supabase = await createClient();
-
-  // First get current status
   const { data: currentProduct, error: fetchError } = await supabase
     .from('products')
     .select('active')
@@ -221,7 +176,6 @@ export async function toggleProductStatus(productId: string): Promise<Product> {
     throw new Error(fetchError.message);
   }
 
-  // Toggle status
   const { data, error } = await supabase
     .from('products')
     .update({
@@ -237,9 +191,7 @@ export async function toggleProductStatus(productId: string): Promise<Product> {
     throw new Error(error.message);
   }
 
-  // Step 3: Update status on blockchain
   try {
-    // Dynamic import to keep contract code server-side only
     const { updateProductStatus: updateProductStatusOnChain } = await import('src/lib/api/contract-service');
     
     console.log('[toggleProductStatus] Updating on blockchain...', {
@@ -255,21 +207,15 @@ export async function toggleProductStatus(productId: string): Promise<Product> {
     console.log('[toggleProductStatus] Blockchain update successful:', deployHash);
   } catch (contractError: any) {
     console.error('[toggleProductStatus] Blockchain update failed:', contractError);
-    // Contract hatası kritik değil
   }
 
   return data as Product;
 }
 
-/**
- * Update product stock
- */
 export async function updateProductStock(
   productId: string,
   newStock: number
 ): Promise<Product> {
-  const supabase = await createClient();
-
   const { data, error } = await supabase
     .from('products')
     .update({
@@ -288,12 +234,7 @@ export async function updateProductStock(
   return data as Product;
 }
 
-/**
- * Get product statistics for a merchant
- */
 export async function getProductStats(merchantId: string) {
-  const supabase = await createClient();
-
   const { data: products, error } = await supabase
     .from('products')
     .select('active, stock, price')

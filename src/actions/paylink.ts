@@ -10,11 +10,6 @@ import type {
   CreatePayLinkResponse,
 } from 'src/types/paylink';
 
-// ----------------------------------------------------------------------
-
-/**
- * Generate unique slug for PayLink
- */
 async function generateSlug(productName: string): Promise<string> {
   const baseSlug = productName
     .toLowerCase()
@@ -25,7 +20,6 @@ async function generateSlug(productName: string): Promise<string> {
   let slug = baseSlug;
   let counter = 1;
   
-  // Check uniqueness
   while (true) {
     const { data } = await supabase
       .from('paylinks')
@@ -42,16 +36,11 @@ async function generateSlug(productName: string): Promise<string> {
   return slug;
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Create new PayLink
- */
 export async function createPayLink(
   input: PayLinkCreateInput
 ): Promise<CreatePayLinkResponse> {
   try {
-    // Get merchant
+
     const { data: merchant, error: merchantError } = await supabase
       .from('merchants')
       .select('id, wallet_address')
@@ -62,7 +51,6 @@ export async function createPayLink(
       throw new Error('Merchant not found');
     }
 
-    // Verify product belongs to merchant
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('id, name, merchant_id')
@@ -74,10 +62,8 @@ export async function createPayLink(
       throw new Error('Product not found');
     }
 
-    // Generate slug
     const slug = await generateSlug(product.name);
 
-    // Create PayLink
     const { data, error } = await supabase
       .from('paylinks')
       .insert({
@@ -105,7 +91,6 @@ export async function createPayLink(
     const publicUrl = `https://caspay.link/pay/${slug}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(publicUrl)}`;
 
-    // Update QR code URL
     const { data: updatedPaylink } = await supabase
       .from('paylinks')
       .update({ qr_code_url: qrCodeUrl })
@@ -124,11 +109,6 @@ export async function createPayLink(
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Get all PayLinks for a merchant
- */
 export async function getPayLinks(merchantId: string): Promise<PayLinkWithProduct[]> {
   try {
     const { data, error } = await supabase
@@ -168,11 +148,6 @@ export async function getPayLinks(merchantId: string): Promise<PayLinkWithProduc
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Get single PayLink by slug (public access)
- */
 export async function getPayLinkBySlug(slug: string): Promise<PayLinkWithProduct | null> {
   try {
     const { data, error } = await supabase
@@ -206,12 +181,10 @@ export async function getPayLinkBySlug(slug: string): Promise<PayLinkWithProduct
       return null;
     }
 
-    // Check expiration
     if (data.expires_at && new Date(data.expires_at) < new Date()) {
       return null;
     }
 
-    // Check max uses
     if (data.max_uses && data.current_uses >= data.max_uses) {
       return null;
     }
@@ -223,11 +196,6 @@ export async function getPayLinkBySlug(slug: string): Promise<PayLinkWithProduct
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Get PayLink by ID
- */
 export async function getPayLink(id: string, merchantId: string): Promise<PayLinkWithProduct | null> {
   try {
     const { data, error } = await supabase
@@ -268,11 +236,6 @@ export async function getPayLink(id: string, merchantId: string): Promise<PayLin
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Update PayLink
- */
 export async function updatePayLink(
   id: string,
   input: PayLinkUpdateInput
@@ -300,11 +263,6 @@ export async function updatePayLink(
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Delete PayLink
- */
 export async function deletePayLink(id: string): Promise<void> {
   try {
     const { error } = await supabase
@@ -322,11 +280,6 @@ export async function deletePayLink(id: string): Promise<void> {
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Track analytics event
- */
 export async function trackPayLinkEvent(
   paylinkId: string,
   eventType: 'view' | 'payment_initiated' | 'payment_completed' | 'payment_failed',
@@ -361,11 +314,6 @@ export async function trackPayLinkEvent(
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Increment PayLink usage count
- */
 export async function incrementPayLinkUsage(paylinkId: string): Promise<void> {
   try {
     const { error } = await supabase.rpc('increment_paylink_usage', {
@@ -380,17 +328,12 @@ export async function incrementPayLinkUsage(paylinkId: string): Promise<void> {
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Get PayLink analytics/stats
- */
 export async function getPayLinkStats(
   paylinkId: string,
   merchantId: string
 ): Promise<PayLinkStats | null> {
   try {
-    // Get PayLink with product name
+
     const { data: paylink, error: paylinkError } = await supabase
       .from('paylinks')
       .select('slug, product:products(name)')
@@ -402,7 +345,6 @@ export async function getPayLinkStats(
       return null;
     }
 
-    // Get analytics
     const { data: analytics, error: analyticsError } = await supabase
       .from('paylink_analytics')
       .select('event_type, payment_method, created_at')
@@ -413,7 +355,6 @@ export async function getPayLinkStats(
       return null;
     }
 
-    // Get payments
     const { data: payments, error: paymentsError } = await supabase
       .from('payments')
       .select('net_amount, payment_source, created_at')
@@ -456,11 +397,6 @@ export async function getPayLinkStats(
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Get all PayLinks stats for dashboard
- */
 export async function getAllPayLinkStats(merchantId: string): Promise<PayLinkStats[]> {
   try {
     const { data: paylinks, error: paylinksError } = await supabase

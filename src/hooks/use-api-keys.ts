@@ -17,14 +17,10 @@ import {
   toggleApiKeyStatus,
 } from 'src/actions/api-key';
 
-// ----------------------------------------------------------------------
 
 const getKey = (merchantId: string | undefined) => 
   merchantId ? `/api/merchants/${merchantId}/api-keys` : null;
 
-/**
- * Hook to fetch API keys for a merchant
- */
 export function useApiKeys(merchantId: string | undefined) {
   const { data, error, isLoading, isValidating } = useSWR(
     getKey(merchantId),
@@ -43,9 +39,7 @@ export function useApiKeys(merchantId: string | undefined) {
   };
 }
 
-/**
- * Hook for API key mutations
- */
+
 export function useApiKeyMutations(merchantId: string | undefined) {
   const key = getKey(merchantId);
 

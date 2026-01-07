@@ -9,15 +9,42 @@ import type {
 
 import { supabase } from 'src/lib/supabase';
 
+export async function getMerchantsByUserId(userId: string): Promise<Merchant[]> {
+  try {
+    const { data: merchantsData, error: merchantsError } = await supabase
+      .from('merchants')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-// ----------------------------------------------------------------------
+    if (merchantsError) throw merchantsError;
 
-/**
- * Create a new merchant
- */
+    return (merchantsData || []) as Merchant[];
+  } catch (error: any) {
+    console.error('[getMerchantsByUserId] Error:', error);
+    throw error;
+  }
+}
+
+export async function getMerchantById(merchantId: string): Promise<Merchant | null> {
+  try {
+    const { data, error } = await supabase
+      .from('merchants')
+      .select('*')
+      .eq('id', merchantId)
+      .single();
+
+    if (error) throw error;
+
+    return data as Merchant;
+  } catch (error: any) {
+    console.error('[getMerchantById] Error:', error);
+    throw error;
+  }
+}
+
 export async function createMerchant(data: CreateMerchantData): Promise<Merchant> {
   try {
-    // Get user's wallet address from user_profiles
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
       .select('public_key')
@@ -34,7 +61,6 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
       );
     }
 
-    // Generate a unique merchant_id
     const merchantId = `MERCH_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
     const { data: merchant, error } = await supabase
@@ -43,7 +69,7 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
         {
           merchant_id: merchantId,
           user_id: data.user_id,
-          wallet_address: userProfile.public_key, // Use Casper Wallet address
+          wallet_address: userProfile.public_key,
           store_name: data.store_name,
           store_description: data.store_description || null,
           business_type: data.business_type || 'company',
@@ -51,7 +77,7 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
           support_url: data.support_url || null,
           logo_url: data.logo_url || null,
           brand_color: data.brand_color || '#1890FF',
-          status: 'pending', // Will be 'active' after Casper contract deployment
+          status: 'pending',
         },
       ])
       .select()
@@ -62,9 +88,7 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
       throw new Error(error.message);
     }
 
-    // Step 2: Write to blockchain contract
     try {
-      // Dynamic import to keep contract code server-side only
       const { registerMerchant: registerMerchantOnChain } = await import('src/lib/api/contract-service');
       
       console.log('[createMerchant] Registering on blockchain...', {
@@ -79,7 +103,6 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
       
       console.log('[createMerchant] Blockchain registration successful:', deployHash);
       
-      // Deploy hash'i kaydet
       await supabase
         .from('merchants')
         .update({ 
@@ -101,11 +124,6 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Update an existing merchant
- */
 export async function updateMerchant(
   merchantId: string,
   data: UpdateMerchantData
@@ -138,11 +156,6 @@ export async function updateMerchant(
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Delete a merchant
- */
 export async function deleteMerchant(merchantId: string): Promise<void> {
   try {
     const { error } = await supabase.from('merchants').delete().eq('id', merchantId);
@@ -157,11 +170,6 @@ export async function deleteMerchant(merchantId: string): Promise<void> {
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Update merchant status
- */
 export async function updateMerchantStatus(
   merchantId: string,
   status: MerchantStatus
@@ -179,12 +187,9 @@ export async function updateMerchantStatus(
       throw new Error(error.message);
     }
 
-    // Step 2: Write to blockchain contract
     try {
-      // Dynamic import to keep contract code server-side only
       const { updateMerchantStatus: updateMerchantStatusOnChain } = await import('src/lib/api/contract-service');
       
-      // Status enum: Active=0, Suspended=1, Closed=2, Pending=3
       const statusMap: Record<MerchantStatus, number> = {
         'active': 0,
         'suspended': 1,
@@ -201,14 +206,13 @@ export async function updateMerchantStatus(
       });
       
       const deployHash = await updateMerchantStatusOnChain(
-        merchant.merchant_id, // Custom merchant_id kullan
+        merchant.merchant_id,
         statusEnum
       );
       
       console.log('[updateMerchantStatus] Blockchain update successful:', deployHash);
     } catch (contractError: any) {
       console.error('[updateMerchantStatus] Blockchain update failed:', contractError);
-      // Contract hatası kritik değil, Supabase'de değişiklik yapıldı
     }
 
     return merchant as Merchant;

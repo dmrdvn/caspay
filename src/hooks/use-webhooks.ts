@@ -22,8 +22,6 @@ import {
   getRecentWebhookDeliveries,
 } from 'src/actions/webhook';
 
-// ----------------------------------------------------------------------
-
 const getEndpointsKey = (merchantId: string | undefined) =>
   merchantId ? `/api/merchants/${merchantId}/webhooks` : null;
 
@@ -33,9 +31,6 @@ const getDeliveriesKey = (endpointId: string | undefined) =>
 const getRecentDeliveriesKey = (merchantId: string | undefined) =>
   merchantId ? `/api/merchants/${merchantId}/webhook-deliveries` : null;
 
-/**
- * Hook to fetch webhook endpoints for a merchant
- */
 export function useWebhooks(merchantId: string | undefined) {
   const { data, error, isLoading, isValidating } = useSWR(
     getEndpointsKey(merchantId),
@@ -54,9 +49,6 @@ export function useWebhooks(merchantId: string | undefined) {
   };
 }
 
-/**
- * Hook for webhook mutations
- */
 export function useWebhookMutations(merchantId: string | undefined) {
   const key = getEndpointsKey(merchantId);
 
@@ -71,14 +63,12 @@ export function useWebhookMutations(merchantId: string | undefined) {
         merchant_id: merchantId,
       });
 
-      // Optimistically update cache
       await mutate(
         key,
         (current: WebhookEndpoint[] = []) => [newWebhook, ...current],
         false
       );
 
-      // Revalidate
       await mutate(key);
 
       return newWebhook;
@@ -90,7 +80,6 @@ export function useWebhookMutations(merchantId: string | undefined) {
     async (endpointId: string, input: UpdateWebhookInput): Promise<WebhookEndpoint> => {
       const updated = await updateWebhookEndpoint(endpointId, input);
 
-      // Optimistically update cache
       await mutate(
         key,
         (current: WebhookEndpoint[] = []) =>
@@ -98,7 +87,6 @@ export function useWebhookMutations(merchantId: string | undefined) {
         false
       );
 
-      // Revalidate
       await mutate(key);
 
       return updated;
@@ -108,7 +96,7 @@ export function useWebhookMutations(merchantId: string | undefined) {
 
   const remove = useCallback(
     async (endpointId: string): Promise<void> => {
-      // Optimistically update cache
+
       await mutate(
         key,
         (current: WebhookEndpoint[] = []) => current.filter((item) => item.id !== endpointId),
@@ -117,7 +105,6 @@ export function useWebhookMutations(merchantId: string | undefined) {
 
       await deleteWebhookEndpoint(endpointId);
 
-      // Revalidate
       await mutate(key);
     },
     [key]
@@ -127,7 +114,6 @@ export function useWebhookMutations(merchantId: string | undefined) {
     async (endpointId: string): Promise<WebhookEndpoint> => {
       const updated = await toggleWebhookStatus(endpointId);
 
-      // Optimistically update cache
       await mutate(
         key,
         (current: WebhookEndpoint[] = []) =>
@@ -135,7 +121,6 @@ export function useWebhookMutations(merchantId: string | undefined) {
         false
       );
 
-      // Revalidate
       await mutate(key);
 
       return updated;
@@ -147,7 +132,6 @@ export function useWebhookMutations(merchantId: string | undefined) {
     async (endpointId: string): Promise<WebhookEndpoint> => {
       const updated = await regenerateWebhookSecret(endpointId);
 
-      // Optimistically update cache
       await mutate(
         key,
         (current: WebhookEndpoint[] = []) =>
@@ -155,7 +139,6 @@ export function useWebhookMutations(merchantId: string | undefined) {
         false
       );
 
-      // Revalidate
       await mutate(key);
 
       return updated;
@@ -181,16 +164,13 @@ export function useWebhookMutations(merchantId: string | undefined) {
   };
 }
 
-/**
- * Hook to fetch webhook deliveries for a specific endpoint
- */
 export function useWebhookDeliveries(endpointId: string | undefined, limit: number = 50) {
   const { data, error, isLoading, isValidating } = useSWR(
     getDeliveriesKey(endpointId),
     () => (endpointId ? getWebhookDeliveries(endpointId, limit) : null),
     {
       revalidateOnFocus: false,
-      refreshInterval: 10000, // Refresh every 10 seconds
+      refreshInterval: 10000,
     }
   );
 
@@ -202,16 +182,13 @@ export function useWebhookDeliveries(endpointId: string | undefined, limit: numb
   };
 }
 
-/**
- * Hook to fetch recent webhook deliveries for all merchant endpoints
- */
 export function useRecentWebhookDeliveries(merchantId: string | undefined, limit: number = 50) {
   const { data, error, isLoading, isValidating } = useSWR(
     getRecentDeliveriesKey(merchantId),
     () => (merchantId ? getRecentWebhookDeliveries(merchantId, limit) : null),
     {
       revalidateOnFocus: false,
-      refreshInterval: 10000, // Refresh every 10 seconds
+      refreshInterval: 10000,
     }
   );
 
@@ -223,9 +200,6 @@ export function useRecentWebhookDeliveries(merchantId: string | undefined, limit
   };
 }
 
-/**
- * Hook for webhook delivery mutations
- */
 export function useWebhookDeliveryMutations(endpointId: string | undefined) {
   const key = getDeliveriesKey(endpointId);
 
@@ -233,7 +207,6 @@ export function useWebhookDeliveryMutations(endpointId: string | undefined) {
     async (deliveryId: string): Promise<WebhookDelivery> => {
       const updated = await retryWebhookDelivery(deliveryId);
 
-      // Optimistically update cache
       await mutate(
         key,
         (current: WebhookDelivery[] = []) =>
@@ -241,7 +214,6 @@ export function useWebhookDeliveryMutations(endpointId: string | undefined) {
         false
       );
 
-      // Revalidate
       await mutate(key);
 
       return updated;

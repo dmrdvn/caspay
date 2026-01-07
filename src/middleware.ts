@@ -5,27 +5,23 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
 
-  // Handle docs subdomain
   if (hostname.startsWith('docs.')) {
-    // If already on /docs path, continue
+
     if (pathname.startsWith('/docs')) {
       return NextResponse.next();
     }
-    // Rewrite to /docs
     const url = request.nextUrl.clone();
     url.pathname = `/docs${pathname}`;
     return NextResponse.rewrite(url);
   }
 
-  // Handle api subdomain
   if (hostname.startsWith('api.')) {
-    // Root path goes to health check
+
     if (pathname === '/') {
       const url = request.nextUrl.clone();
       url.pathname = '/api/health';
       return NextResponse.rewrite(url);
     }
-    // API routes continue normally
     return NextResponse.next();
   }
 

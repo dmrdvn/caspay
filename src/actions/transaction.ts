@@ -1,75 +1,16 @@
 'use server';
 
-import { createClient } from 'src/lib/supabase';
+import type { TransactionItem } from 'src/types/transaction';
 
-// ----------------------------------------------------------------------
+import { supabase } from 'src/lib/supabase';
 
-export type TransactionItem = {
-  id: string;
-  merchant_id: string;
-  transaction_hash: string;
-  block_height: number | null;
-  block_timestamp: string;
-  payer_address: string;
-  product_id: string | null;
-  subscription_plan_id: string | null;
-  amount: number;
-  token: string;
-  decimals: number | null;
-  usd_value: number | null;
-  exchange_rate: number | null;
-  platform_fee_bps: number;
-  platform_fee_amount: number | null;
-  net_amount: number | null;
-  status: 'pending' | 'confirmed' | 'failed';
-  payment_type: 'product' | 'subscription';
-  invoice_number: string | null;
-  invoice_url: string | null;
-  
-  // PayLink Support
-  paylink_id: string | null;
-  payment_source: 'sdk' | 'paylink_wallet' | 'paylink_fiat';
-  
-  metadata: {
-    product_name?: string;
-    plan_name?: string;
-    customer_email?: string;
-    customer_name?: string;
-    subscription_end_date?: string; // For active/expired filtering
-    [key: string]: any;
-  } | null;
-  created_at: string;
-  
-  // From joined tables (payment_analytics view)
-  store_name?: string;
-  merchant_identifier?: string;
-  product_name?: string;
-  plan_name?: string;
-  billing_interval?: string;
-  
-  // From subscriptions table (for subscription payments)
-  subscription_id?: string;
-  subscription_status?: string;
-  subscription_start?: string; // current_period_start
-  subscription_end?: string;   // current_period_end
-};
-
-// ----------------------------------------------------------------------
-
-/**
- * Get all transactions for current merchant
- */
 export async function getTransactions(): Promise<TransactionItem[]> {
-  const supabase = await createClient();
-
-  // Get current user
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   if (userError || !user) {
     throw new Error('Unauthorized');
   }
 
-  // Get merchant for current user
   const { data: merchant, error: merchantError } = await supabase
     .from('merchants')
     .select('id')
@@ -80,7 +21,6 @@ export async function getTransactions(): Promise<TransactionItem[]> {
     throw new Error('Merchant not found');
   }
 
-  // Get payments using payment_analytics view for rich data
   const { data, error } = await supabase
     .from('payment_analytics')
     .select('*')
@@ -92,7 +32,6 @@ export async function getTransactions(): Promise<TransactionItem[]> {
     throw new Error('Failed to fetch transactions');
   }
 
-  // Map payment_analytics to TransactionItem
   const transactions: TransactionItem[] = (data || []).map((payment: any) => ({
     id: payment.payment_id,
     merchant_id: payment.merchant_id,
@@ -107,7 +46,7 @@ export async function getTransactions(): Promise<TransactionItem[]> {
     decimals: payment.decimals,
     usd_value: payment.usd_value,
     exchange_rate: payment.exchange_rate,
-    platform_fee_bps: 0, // Not in view, would need to join
+    platform_fee_bps: 0, 
     platform_fee_amount: null,
     net_amount: null,
     status: payment.status,
@@ -115,14 +54,12 @@ export async function getTransactions(): Promise<TransactionItem[]> {
     invoice_number: payment.invoice_number,
     invoice_url: payment.invoice_url,
     
-    // PayLink fields
     paylink_id: payment.paylink_id || null,
     payment_source: payment.payment_source || 'sdk',
     
     metadata: payment.payment_metadata,
     created_at: payment.payment_created_at,
     
-    // From joined tables
     store_name: payment.store_name,
     merchant_identifier: payment.merchant_identifier,
     product_name: payment.product_name,
@@ -133,20 +70,13 @@ export async function getTransactions(): Promise<TransactionItem[]> {
   return transactions;
 }
 
-/**
- * Get single transaction by ID
- */
 export async function getTransaction(transactionId: string): Promise<TransactionItem | null> {
-  const supabase = await createClient();
-
-  // Get current user
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   if (userError || !user) {
     throw new Error('Unauthorized');
   }
 
-  // Get merchant for current user
   const { data: merchant, error: merchantError } = await supabase
     .from('merchants')
     .select('id')
@@ -157,7 +87,6 @@ export async function getTransaction(transactionId: string): Promise<Transaction
     throw new Error('Merchant not found');
   }
 
-  // Get payment using payment_analytics view
   const { data, error } = await supabase
     .from('payment_analytics')
     .select('*')
@@ -194,7 +123,6 @@ export async function getTransaction(transactionId: string): Promise<Transaction
     invoice_number: data.invoice_number,
     invoice_url: data.invoice_url,
     
-    // PayLink fields
     paylink_id: data.paylink_id || null,
     payment_source: data.payment_source || 'sdk',
     

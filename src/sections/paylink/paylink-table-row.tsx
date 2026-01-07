@@ -19,17 +19,15 @@ import { useBoolean, usePopover } from 'minimal-shared/hooks';
 
 import { fDate } from 'src/utils/format-time';
 
-import type { PayLinkWithProduct } from 'src/types/paylink';
+import { usePayLinkMutations } from 'src/hooks/use-paylinks';
+import { getPayLinkStats } from 'src/actions/paylink';
+
+import type { PayLinkWithProduct, PayLinkStats } from 'src/types/paylink';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomPopover } from 'src/components/custom-popover';
-
-import { usePayLinkMutations } from 'src/hooks/use-paylinks';
-import { getPayLinkStats } from 'src/actions/paylink';
-
-import type { PayLinkStats } from 'src/types/paylink';
 
 // ----------------------------------------------------------------------
 
@@ -135,17 +133,7 @@ export function PayLinkTableRow({ row, selected, onSelectRow, stats: propStats }
         </TableCell>
 
         <TableCell align="center">
-          <Box sx={{ typography: 'body2' }}>{stats?.total_views || 0}</Box>
-        </TableCell>
-
-        <TableCell align="center">
-          <Box sx={{ typography: 'body2' }}>{stats?.total_payments || 0}</Box>
-        </TableCell>
-
-        <TableCell align="center">
-          <Box sx={{ typography: 'body2', color: stats?.conversion_rate ? 'success.main' : 'text.secondary' }}>
-            {stats?.conversion_rate ? `${stats.conversion_rate}%` : '-'}
-          </Box>
+          <Box sx={{ typography: 'body2' }}>{row.current_uses || 0}</Box>
         </TableCell>
 
         <TableCell align="right">

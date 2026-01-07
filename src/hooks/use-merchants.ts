@@ -6,8 +6,9 @@ import type { Merchant, MerchantStatus } from 'src/types/merchant';
 import useSWR, { mutate } from 'swr';
 import { useMemo, useState, useCallback } from 'react';
 
-import { supabase } from 'src/lib/supabase';
 import {
+  getMerchantsByUserId as getMerchantsByUserIdAction,
+  getMerchantById as getMerchantByIdAction,
   createMerchant as createMerchantAction,
   updateMerchant as updateMerchantAction,
   deleteMerchant as deleteMerchantAction,
@@ -15,8 +16,6 @@ import {
 } from 'src/actions/merchant';
 
 import { useAuthContext } from 'src/auth/hooks';
-
-// ----------------------------------------------------------------------
 
 const SWR_OPTIONS: SWRConfiguration = {
   revalidateOnFocus: true,
@@ -26,59 +25,28 @@ const SWR_OPTIONS: SWRConfiguration = {
   errorRetryInterval: 3000,
 };
 
-// ----------------------------------------------------------------------
-
-/**
- * Fetch all merchants for the authenticated user
- */
 async function fetchMerchants(userId: string | undefined): Promise<Merchant[]> {
   if (!userId) return [];
 
   try {
-    // Fetch merchants for this user
-    const { data: merchantsData, error: merchantsError } = await supabase
-      .from('merchants')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (merchantsError) throw merchantsError;
-
-    return (merchantsData || []) as Merchant[];
+    return await getMerchantsByUserIdAction(userId);
   } catch (error) {
     console.error('[fetchMerchants] Error:', error);
     throw error;
   }
 }
 
-/**
- * Fetch a single merchant by ID
- */
 async function fetchMerchant(merchantId: string | undefined): Promise<Merchant | null> {
   if (!merchantId) return null;
 
   try {
-    const { data, error } = await supabase
-      .from('merchants')
-      .select('*')
-      .eq('id', merchantId)
-      .single();
-
-    if (error) throw error;
-
-    return data as Merchant;
+    return await getMerchantByIdAction(merchantId);
   } catch (error) {
     console.error('[fetchMerchant] Error:', error);
     throw error;
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook for fetching all merchants
- * Uses SWR for caching and automatic revalidation
- */
 export function useMerchants() {
   const { user } = useAuthContext();
   const userId = user?.id;
@@ -95,7 +63,6 @@ export function useMerchants() {
     SWR_OPTIONS
   );
 
-  // Current merchant management
   const [currentMerchantId, setCurrentMerchantId] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('current_merchant_id');
@@ -106,13 +73,11 @@ export function useMerchants() {
   const currentMerchant = useMemo(() => {
     if (!merchants?.length) return null;
 
-    // Try to find saved merchant
     if (currentMerchantId) {
       const saved = merchants.find((m) => m.id === currentMerchantId);
       if (saved) return saved;
     }
 
-    // Fallback to first active merchant or first merchant
     const active = merchants.find((m) => m.status === 'active');
     return active || merchants[0] || null;
   }, [merchants, currentMerchantId]);
@@ -141,12 +106,6 @@ export function useMerchants() {
   return memoizedValue;
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook for fetching a single merchant by ID
- * Uses SWR for caching and automatic revalidation
- */
 export function useMerchant(merchantId: string | undefined) {
   const {
     data: merchant,
@@ -174,12 +133,6 @@ export function useMerchant(merchantId: string | undefined) {
   return memoizedValue;
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook for merchant mutations (create, update, delete)
- * Includes optimistic updates and automatic cache revalidation
- */
 export function useMerchantMutations() {
   const { user } = useAuthContext();
   const userId = user?.id;
@@ -187,9 +140,6 @@ export function useMerchantMutations() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  /**
-   * Create a new merchant
-   */
   const createMerchant = useCallback(
     async (data: {
       store_name: string;
@@ -207,13 +157,11 @@ export function useMerchantMutations() {
       try {
         setIsCreating(true);
 
-        // Create merchant
         const newMerchant = await createMerchantAction({
           user_id: userId,
           ...data,
         });
 
-        // Revalidate merchants list
         await mutate(['merchants', userId]);
 
         return newMerchant;
@@ -227,9 +175,6 @@ export function useMerchantMutations() {
     [userId]
   );
 
-  /**
-   * Update an existing merchant
-   */
   const updateMerchant = useCallback(
     async (
       merchantId: string,
@@ -246,7 +191,6 @@ export function useMerchantMutations() {
       try {
         setIsUpdating(true);
 
-        // Optimistic update
         mutate(
           ['merchant', merchantId],
           (currentData: Merchant | undefined) => {
@@ -256,10 +200,8 @@ export function useMerchantMutations() {
           { revalidate: false }
         );
 
-        // Update merchant
         const updatedMerchant = await updateMerchantAction(merchantId, data);
 
-        // Revalidate cache
         await Promise.all([
           mutate(['merchant', merchantId]),
           mutate(['merchants', userId]),
@@ -267,7 +209,6 @@ export function useMerchantMutations() {
 
         return updatedMerchant;
       } catch (error) {
-        // Rollback on error
         await mutate(['merchant', merchantId]);
         console.error('[updateMerchant] Error:', error);
         throw error;
@@ -278,15 +219,11 @@ export function useMerchantMutations() {
     [userId]
   );
 
-  /**
-   * Delete a merchant
-   */
   const deleteMerchant = useCallback(
     async (merchantId: string) => {
       try {
         setIsDeleting(true);
 
-        // Optimistic update - remove from list
         mutate(
           ['merchants', userId],
           async (currentData: Merchant[] | undefined) => {
@@ -296,13 +233,10 @@ export function useMerchantMutations() {
           { revalidate: false }
         );
 
-        // Delete merchant
         await deleteMerchantAction(merchantId);
 
-        // Revalidate cache
         await mutate(['merchants', userId]);
       } catch (error) {
-        // Rollback on error
         await mutate(['merchants', userId]);
         console.error('[deleteMerchant] Error:', error);
         throw error;
@@ -313,15 +247,11 @@ export function useMerchantMutations() {
     [userId]
   );
 
-  /**
-   * Update merchant status
-   */
   const updateStatus = useCallback(
     async (merchantId: string, status: MerchantStatus) => {
       try {
         setIsUpdating(true);
 
-        // Optimistic update
         mutate(
           ['merchant', merchantId],
           (currentData: Merchant | undefined) => {
@@ -331,10 +261,8 @@ export function useMerchantMutations() {
           { revalidate: false }
         );
 
-        // Update status
         const updatedMerchant = await updateMerchantStatusAction(merchantId, status);
 
-        // Revalidate cache
         await Promise.all([
           mutate(['merchant', merchantId]),
           mutate(['merchants', userId]),
@@ -342,7 +270,6 @@ export function useMerchantMutations() {
 
         return updatedMerchant;
       } catch (error) {
-        // Rollback on error
         await mutate(['merchant', merchantId]);
         console.error('[updateStatus] Error:', error);
         throw error;

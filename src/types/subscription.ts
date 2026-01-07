@@ -1,17 +1,16 @@
-// ----------------------------------------------------------------------
 
 export type SubscriptionPlanInterval = 'weekly' | 'monthly' | 'yearly';
 
 export type SubscriptionPlanFeature = {
   name: string;
   included: boolean;
-  limit?: number; // Optional: for "5 users", "10GB storage" etc.
+  limit?: number; 
 };
 
 export type SubscriptionPlan = {
   id: string;
   merchant_id: string;
-  plan_id: string; // Used in contract calls
+  plan_id: string; 
   name: string;
   description: string | null;
   price: number;
@@ -23,14 +22,14 @@ export type SubscriptionPlan = {
   features: SubscriptionPlanFeature[] | null;
   metadata: Record<string, any> | null;
   active: boolean;
-  transaction_hash: string | null; // Blockchain creation transaction hash
+  transaction_hash: string | null; 
   created_at: string;
   updated_at: string;
 };
 
 export type SubscriptionPlanCreateInput = {
   merchant_id: string;
-  plan_id?: string; // Auto-generated if not provided
+  plan_id?: string; 
   name: string;
   description?: string;
   price: number;
@@ -57,8 +56,6 @@ export type SubscriptionPlanUpdateInput = {
   metadata?: Record<string, any>;
   active?: boolean;
 };
-
-// ----------------------------------------------------------------------
 
 export type SubscriptionStatus =
   | 'active'
@@ -114,8 +111,6 @@ export type SubscriptionUpdateInput = {
   metadata?: Record<string, any>;
 };
 
-// ----------------------------------------------------------------------
-
 export type SubscriptionChargeStatus = 'pending' | 'success' | 'failed';
 
 export type SubscriptionCharge = {
@@ -138,8 +133,6 @@ export type SubscriptionCharge = {
 export type SubscriptionChargeWithDetails = SubscriptionCharge & {
   subscription: SubscriptionWithPlan;
 };
-
-// ----------------------------------------------------------------------
 
 export type SubscriptionPlanFilters = {
   interval: SubscriptionPlanInterval[];

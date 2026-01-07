@@ -1,4 +1,3 @@
-// ----------------------------------------------------------------------
 
 export type Merchant = {
   id: string;
@@ -11,7 +10,7 @@ export type Merchant = {
   logo_url: string | null;
   brand_color?: string | null;
   wallet_address?: string | null;
-  transaction_hash?: string | null; // Blockchain registration transaction hash
+  transaction_hash?: string | null; 
   contract_deployed_at?: string | null;
   status: 'pending' | 'active' | 'suspended' | 'closed';
   created_at?: string;

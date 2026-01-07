@@ -22,7 +22,6 @@ import {
 
 import { useAuthContext } from 'src/auth/hooks';
 
-// ----------------------------------------------------------------------
 
 const SWR_OPTIONS: SWRConfiguration = {
   revalidateOnFocus: true,
@@ -32,11 +31,6 @@ const SWR_OPTIONS: SWRConfiguration = {
   errorRetryInterval: 3000,
 };
 
-// ----------------------------------------------------------------------
-
-/**
- * Fetch all PayLinks for a merchant
- */
 async function fetchPayLinks(merchantId: string | undefined): Promise<PayLinkWithProduct[]> {
   if (!merchantId) return [];
 
@@ -48,9 +42,6 @@ async function fetchPayLinks(merchantId: string | undefined): Promise<PayLinkWit
   }
 }
 
-/**
- * Fetch single PayLink by ID
- */
 async function fetchPayLink(id: string | undefined, merchantId: string | undefined): Promise<PayLinkWithProduct | null> {
   if (!id || !merchantId) return null;
 
@@ -62,11 +53,6 @@ async function fetchPayLink(id: string | undefined, merchantId: string | undefin
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook to get all PayLinks for merchant
- */
 export function usePayLinks(merchantId?: string | null) {
   const { data, error, isLoading, isValidating, mutate: revalidate } = useSWR<PayLinkWithProduct[]>(
     merchantId ? ['paylinks', merchantId] : null,
@@ -89,9 +75,6 @@ export function usePayLinks(merchantId?: string | null) {
   return memoizedValue;
 }
 
-/**
- * Hook to get single PayLink by ID
- */
 export function usePayLink(id: string | null, merchantId?: string | null) {
   const { data, error, isLoading, isValidating, mutate: revalidate } = useSWR<PayLinkWithProduct | null>(
     id && merchantId ? ['paylink', id, merchantId] : null,
@@ -113,11 +96,6 @@ export function usePayLink(id: string | null, merchantId?: string | null) {
   return memoizedValue;
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook for PayLink mutations (create, update, delete)
- */
 export function usePayLinkMutations(merchantId?: string | null) {
   const { user } = useAuthContext();
   const userId = user?.id;
@@ -133,8 +111,7 @@ export function usePayLinkMutations(merchantId?: string | null) {
           ...input,
           merchant_id: merchantId,
         });
-        
-        // Revalidate PayLinks list
+
         await mutate(['paylinks', merchantId]);
 
         return result;
@@ -154,8 +131,6 @@ export function usePayLinkMutations(merchantId?: string | null) {
 
       try {
         const result = await updatePayLinkAction(id, input);
-
-        // Revalidate cache
         await Promise.all([
           merchantId ? mutate(['paylinks', merchantId]) : Promise.resolve(),
           mutate(['paylink', id, merchantId]),
@@ -178,8 +153,6 @@ export function usePayLinkMutations(merchantId?: string | null) {
 
       try {
         await deletePayLinkAction(id);
-
-        // Revalidate PayLinks list
         if (merchantId) {
           await mutate(['paylinks', merchantId]);
         }

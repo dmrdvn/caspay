@@ -10,15 +10,15 @@ import type {
 import useSWR, { mutate } from 'swr';
 import { useMemo, useState, useCallback } from 'react';
 
-import { supabase } from 'src/lib/supabase';
 import {
+  getSubscriptionPlansByMerchant as getSubscriptionPlansByMerchantAction,
+  getSubscriptionPlanById as getSubscriptionPlanByIdAction,
+  getSubscriptionPlanStats as getSubscriptionPlanStatsAction,
   createSubscriptionPlan as createSubscriptionPlanAction,
   updateSubscriptionPlan as updateSubscriptionPlanAction,
   deleteSubscriptionPlan as deleteSubscriptionPlanAction,
   toggleSubscriptionPlanStatus as toggleSubscriptionPlanStatusAction,
 } from 'src/actions/subscription-plan';
-
-// ----------------------------------------------------------------------
 
 const SWR_OPTIONS: SWRConfiguration = {
   revalidateOnFocus: true,
@@ -28,113 +28,43 @@ const SWR_OPTIONS: SWRConfiguration = {
   errorRetryInterval: 3000,
 };
 
-// ----------------------------------------------------------------------
-
-/**
- * Fetch all subscription plans for a specific merchant
- */
 async function fetchSubscriptionPlans(
   merchantId: string | undefined
 ): Promise<SubscriptionPlan[]> {
   if (!merchantId) return [];
 
   try {
-    const { data, error } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('merchant_id', merchantId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    return (data || []) as SubscriptionPlan[];
+    return await getSubscriptionPlansByMerchantAction(merchantId);
   } catch (error) {
     console.error('[fetchSubscriptionPlans] Error:', error);
     throw error;
   }
 }
 
-/**
- * Fetch a single subscription plan by ID
- */
 async function fetchSubscriptionPlan(
   planId: string | undefined
 ): Promise<SubscriptionPlan | null> {
   if (!planId) return null;
 
   try {
-    const { data, error } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .eq('id', planId)
-      .single();
-
-    if (error) throw error;
-
-    return data as SubscriptionPlan;
+    return await getSubscriptionPlanByIdAction(planId);
   } catch (error) {
     console.error('[fetchSubscriptionPlan] Error:', error);
     throw error;
   }
 }
 
-/**
- * Fetch subscription plan statistics for a merchant
- */
 async function fetchSubscriptionPlanStats(merchantId: string | undefined) {
   if (!merchantId) return null;
 
   try {
-    const { data: plans, error } = await supabase
-      .from('subscription_plans')
-      .select('active, price, interval')
-      .eq('merchant_id', merchantId);
-
-    if (error) throw error;
-
-    const activePlans = plans.filter((p) => p.active).length;
-    const totalPlans = plans.length;
-
-    const monthly = plans.filter((p) => p.interval === 'monthly').length;
-    const yearly = plans.filter((p) => p.interval === 'yearly').length;
-    const weekly = plans.filter((p) => p.interval === 'weekly').length;
-
-    const avgMonthlyPrice =
-      plans
-        .filter((p) => p.interval === 'monthly')
-        .reduce((sum, p) => sum + Number(p.price), 0) / (monthly || 1);
-
-    const avgYearlyPrice =
-      plans
-        .filter((p) => p.interval === 'yearly')
-        .reduce((sum, p) => sum + Number(p.price), 0) / (yearly || 1);
-
-    return {
-      total: totalPlans,
-      active: activePlans,
-      inactive: totalPlans - activePlans,
-      byInterval: {
-        monthly,
-        yearly,
-        weekly,
-      },
-      averagePricing: {
-        monthly: avgMonthlyPrice,
-        yearly: avgYearlyPrice,
-      },
-    };
+    return await getSubscriptionPlanStatsAction(merchantId);
   } catch (error) {
     console.error('[fetchSubscriptionPlanStats] Error:', error);
     throw error;
   }
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook for fetching all subscription plans for a merchant
- * Uses SWR for caching and automatic revalidation
- */
 export function useSubscriptionPlans(merchantId: string | null | undefined) {
   const {
     data: plans,
@@ -163,12 +93,6 @@ export function useSubscriptionPlans(merchantId: string | null | undefined) {
   return memoizedValue;
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook for fetching a single subscription plan by ID
- * Uses SWR for caching and automatic revalidation
- */
 export function useSubscriptionPlan(planId: string | null | undefined) {
   const {
     data: plan,
@@ -196,12 +120,6 @@ export function useSubscriptionPlan(planId: string | null | undefined) {
   return memoizedValue;
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook for fetching subscription plan statistics for a merchant
- * Uses SWR for caching and automatic revalidation
- */
 export function useSubscriptionPlanStats(merchantId: string | null | undefined) {
   const {
     data: stats,
@@ -229,12 +147,6 @@ export function useSubscriptionPlanStats(merchantId: string | null | undefined) 
   return memoizedValue;
 }
 
-// ----------------------------------------------------------------------
-
-/**
- * Hook for subscription plan mutations (create, update, delete)
- * Includes optimistic updates and automatic cache revalidation
- */
 export function useSubscriptionPlanMutations(merchantId: string | null | undefined) {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);

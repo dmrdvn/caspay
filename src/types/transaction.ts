@@ -1,0 +1,43 @@
+
+export type TransactionItem = {
+  id: string;
+  merchant_id: string;
+  transaction_hash: string;
+  block_height: number | null;
+  block_timestamp: string;
+  payer_address: string;
+  product_id: string | null;
+  subscription_plan_id: string | null;
+  amount: number;
+  token: string;
+  decimals: number | null;
+  usd_value: number | null;
+  exchange_rate: number | null;
+  platform_fee_bps: number;
+  platform_fee_amount: number | null;
+  net_amount: number | null;
+  status: 'pending' | 'confirmed' | 'failed';
+  payment_type: 'product' | 'subscription';
+  invoice_number: string | null;
+  invoice_url: string | null;
+  paylink_id: string | null;
+  payment_source: 'sdk' | 'paylink_wallet' | 'paylink_fiat';
+  metadata: {
+    product_name?: string;
+    plan_name?: string;
+    customer_email?: string;
+    customer_name?: string;
+    subscription_end_date?: string;
+    [key: string]: any;
+  } | null;
+  created_at: string;
+  store_name?: string;
+  merchant_identifier?: string;
+  product_name?: string;
+  plan_name?: string;
+  billing_interval?: string;
+  subscription_id?: string;
+  subscription_status?: string;
+  subscription_start?: string;
+  subscription_end?: string;
+};

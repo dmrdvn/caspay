@@ -62,8 +62,7 @@ export function PayLinkEditForm({ paylink, merchantId }: Props) {
     },
   });
 
-  const { handleSubmit, watch } = methods;
-  const isActive = watch('is_active');
+  const { handleSubmit } = methods;
 
   const onSubmit = handleSubmit(async (data) => {
     try {

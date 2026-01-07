@@ -1,4 +1,4 @@
-import type { TransactionItem } from 'src/actions/transaction';
+import type { TransactionItem } from 'src/types/transaction';
 
 import dynamic from 'next/dynamic';
 import { useBoolean } from 'minimal-shared/hooks';

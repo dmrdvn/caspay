@@ -1,7 +1,7 @@
 'use client';
 
 import type { TableHeadCellProps } from 'src/components/table';
-import type { TransactionItem } from 'src/actions/transaction';
+import type { TransactionItem } from 'src/types/transaction';
 
 import { sumBy } from 'es-toolkit';
 import { useCallback } from 'react';

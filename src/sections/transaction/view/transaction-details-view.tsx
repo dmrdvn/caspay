@@ -1,6 +1,6 @@
 'use client';
 
-import type { TransactionItem } from 'src/actions/transaction';
+import type { TransactionItem } from 'src/types/transaction';
 
 import { paths } from 'src/routes/paths';
 

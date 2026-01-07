@@ -1,7 +1,4 @@
 
-
-// ----------------------------------------------------------------------
-
 // Product filters for list view
 export type IProductFilters = {
   name: string;
@@ -16,34 +13,34 @@ export type IProductTableFilters = {
 
 // CasPay Product (aligned with Supabase schema)
 export type Product = {
-  id: string; // UUID
-  merchant_id: string; // UUID - FK to merchants
-  product_id: string; // Unique text identifier (e.g., "prod_abc123")
+  id: string; 
+  merchant_id: string; 
+  product_id: string; 
   name: string;
   description?: string | null;
-  price: number; // numeric in DB
-  currency: string; // 'CSPR', 'USDT', 'USDC', or 'CUSTOM'
-  token_address: string; // CEP-18 token contract hash (e.g., 'hash-...')
-  image_url?: string | null; // Primary image
-  images?: string[] | null; // Additional images array
-  stock?: number | null; // Available quantity
-  track_inventory: boolean; // Whether to track stock
-  metadata?: Record<string, any> | null; // JSONB - flexible data (SKU, weight, etc.)
-  active: boolean; // Product status
-  transaction_hash?: string | null; // Blockchain creation transaction hash
-  created_at: string; // timestamptz
-  updated_at: string; // timestamptz
+  price: number; 
+  currency: string; 
+  token_address: string; 
+  image_url?: string | null; 
+  images?: string[] | null; 
+  stock?: number | null; 
+  track_inventory: boolean; 
+  metadata?: Record<string, any> | null; 
+  active: boolean; 
+  transaction_hash?: string | null; 
+  created_at: string; 
+  updated_at: string; 
 };
 
 // For creating/updating products
 export type ProductCreateInput = {
   merchant_id: string;
-  product_id?: string; // Auto-generated if not provided
+  product_id?: string;
   name: string;
   description?: string;
   price: number;
-  currency?: string; // Default: 'CSPR'
-  token_address?: string; // Default: CSPR token hash
+  currency?: string; 
+  token_address?: string;
   image_url?: string;
   images?: string[];
   stock?: number;
@@ -54,5 +51,4 @@ export type ProductCreateInput = {
 
 export type ProductUpdateInput = Partial<ProductCreateInput>;
 
-// Legacy type alias for backward compatibility
 export type IProductItem = Product;

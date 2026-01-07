@@ -3,7 +3,7 @@ import type {
   MerchantAnalytics,
   TopPerformingItem,
   RecentTransaction,
-} from 'src/actions/merchant-analytics';
+} from 'src/types/merchant-analytics';
 
 import useSWR from 'swr';
 import { useMemo } from 'react';
@@ -14,8 +14,6 @@ import {
   getTopPerformingItems,
   getRecentTransactions,
 } from 'src/actions/merchant-analytics';
-
-// ----------------------------------------------------------------------
 
 type UseMerchantAnalyticsReturn = {
   analytics: MerchantAnalytics | null;
@@ -46,8 +44,6 @@ export function useMerchantAnalytics(merchantId?: string): UseMerchantAnalyticsR
 
   return memoizedValue;
 }
-
-// ----------------------------------------------------------------------
 
 type UseTopPerformingItemsReturn = {
   items: TopPerformingItem[];
@@ -82,8 +78,6 @@ export function useTopPerformingItems(
   return memoizedValue;
 }
 
-// ----------------------------------------------------------------------
-
 type UseRecentTransactionsReturn = {
   transactions: RecentTransaction[];
   transactionsLoading: boolean;
@@ -116,8 +110,6 @@ export function useRecentTransactions(
 
   return memoizedValue;
 }
-
-// ----------------------------------------------------------------------
 
 type UseMonthlyActivityReturn = {
   activity: MonthlyActivity[];

@@ -1,33 +1,28 @@
-// ----------------------------------------------------------------------
 
-/**
- * Webhook event types for CasPay platform
- * These events are triggered by Casper Network explorer listener
- */
 export type WebhookEventType =
   // Payment Events (triggered when contract receives balance)
-  | 'payment.received'       // Contract'a ödeme geldi (explorer detected)
-  | 'payment.confirmed'      // Ödeme onaylandı (N block confirmations)
-  | 'payment.failed'         // Ödeme başarısız oldu
+  | 'payment.received' 
+  | 'payment.confirmed'
+  | 'payment.failed'
   
   // Subscription Events
-  | 'subscription.created'   // Yeni abonelik başladı
-  | 'subscription.renewed'   // Abonelik yenilendi
-  | 'subscription.cancelled' // Abonelik iptal edildi
-  | 'subscription.expired'   // Abonelik süresi doldu
+  | 'subscription.created'
+  | 'subscription.renewed'
+  | 'subscription.cancelled' 
+  | 'subscription.expired'  
   
   // Invoice Events
-  | 'invoice.created'        // Fatura oluşturuldu
-  | 'invoice.paid'           // Fatura ödendi
+  | 'invoice.created' 
+  | 'invoice.paid'     
   
   // Payout Events (merchant withdraws balance)
-  | 'payout.initiated'       // Para çekme başlatıldı
-  | 'payout.completed'       // Para çekme tamamlandı
-  | 'payout.failed'          // Para çekme başarısız
+  | 'payout.initiated'     
+  | 'payout.completed'      
+  | 'payout.failed'         
   
   // Contract Events
-  | 'contract.deployed'      // Contract başarıyla deploy edildi
-  | 'contract.error';        // Contract hatası oluştu
+  | 'contract.deployed'     
+  | 'contract.error';        
 
 /**
  * Webhook delivery status

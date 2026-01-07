@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/verify-payments",
+      "schedule": "*/10 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/:path*",

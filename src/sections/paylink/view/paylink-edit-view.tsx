@@ -1,7 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
 import { paths } from 'src/routes/paths';
 
 import { useMerchants } from 'src/hooks';
@@ -20,7 +18,6 @@ type Props = {
 };
 
 export function PayLinkEditView({ id }: Props) {
-  const router = useRouter();
   const { currentMerchant } = useMerchants();
   const { paylink, isLoading } = usePayLink(id, currentMerchant?.id);
 

@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
@@ -18,7 +17,6 @@ import { paths } from 'src/routes/paths';
 import { usePayLinks } from 'src/hooks/use-paylinks';
 import { useMerchants } from 'src/hooks';
 
-import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 import { EmptyContent } from 'src/components/empty-content';
@@ -37,11 +35,9 @@ const TABLE_HEAD = [
   { id: 'product_name', label: 'Product' },
   { id: 'slug', label: 'Link' },
   { id: 'status', label: 'Status', width: 100 },
-  { id: 'views', label: 'Views', width: 100 },
-  { id: 'payments', label: 'Payments', width: 100 },
-  { id: 'conversion', label: 'Conv. Rate', width: 120 },
-  { id: 'revenue', label: 'Revenue', width: 120 },
-  { id: 'usage', label: 'Usage', width: 100 },
+  { id: 'usage', label: 'Uses', width: 100 },
+  { id: 'revenue', label: 'Total Paid', width: 120 },
+  { id: 'usage_limit', label: 'Usage', width: 120 },
   { id: 'created_at', label: 'Created', width: 140 },
   { id: 'actions', label: 'Actions', width: 88 },
 ];
@@ -51,7 +47,6 @@ const TABLE_HEAD = [
 export function PayLinkListView() {
   const router = useRouter();
   
-  // Get current merchant from context
   const { currentMerchant } = useMerchants();
   const merchantId = currentMerchant?.id;
   
@@ -82,7 +77,6 @@ export function PayLinkListView() {
 
   const notFound = !isLoading && !paylinks.length;
 
-  // Show message if no merchant selected
   if (!currentMerchant) {
     return (
       <Container maxWidth="xl">

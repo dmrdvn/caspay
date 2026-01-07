@@ -4,10 +4,8 @@ import { paths } from 'src/routes/paths';
 
 import { CONFIG } from 'src/global-config';
 
-import { Label } from 'src/components/label';
 import { SvgColor } from 'src/components/svg-color';
 
-// ----------------------------------------------------------------------
 
 const icon = (name: string) => (
   <SvgColor src={`${CONFIG.assetsDir}/assets/icons/navbar/${name}.svg`} />
@@ -61,9 +59,7 @@ const ICONS = {
  * - `deepMatch`: An optional boolean to indicate if the item should match subpaths.
  */
 export const navData: NavSectionProps['data'] = [
-  /**
-   * Overview
-   */
+
   {
     subheader: 'Overview',
     items: [
@@ -71,9 +67,6 @@ export const navData: NavSectionProps['data'] = [
       { title: 'Merchant', path: paths.dashboard.merchant.root, icon: ICONS.user },
     ],
   },
-  /**
-   * Commerce
-   */
   {
     subheader: 'Commerce',
     items: [
@@ -107,9 +100,6 @@ export const navData: NavSectionProps['data'] = [
 
     ],
   },
-  /**
-   * Financial
-   */
   {
     subheader: 'Financial',
     items: [
@@ -121,9 +111,6 @@ export const navData: NavSectionProps['data'] = [
 
     ],
   },
-  /**
-   * Settings
-   */
   {
     subheader: 'Settings',
     items: [
