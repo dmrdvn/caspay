@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -22,8 +23,6 @@ import { usePaymentMutations } from 'src/hooks/use-payment';
 
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
-
-// ----------------------------------------------------------------------
 
 type Props = {
   paylink: PayLinkWithProduct | null;
@@ -44,8 +43,6 @@ type PartialPayment = {
   hash: string;
   timestamp: string;
 };
-
-// ----------------------------------------------------------------------
 
 export function PaymentView({ paylink }: Props) {
   const { createPendingPayment, cancelPendingPayment } = usePaymentMutations();
@@ -97,11 +94,15 @@ export function PaymentView({ paylink }: Props) {
   const pollForPayment = useCallback(
     async (paymentId: string) => {
       try {
-        // Check payment status directly (no cron trigger needed)
+        console.log('[pollForPayment] Checking blockchain for payment:', paymentId);
+        
+        const { verifyPendingPayments } = await import('src/actions/payment');
+        await verifyPendingPayments();
+        
         const { checkPaymentStatus } = await import('src/actions/payment');
         const result = await checkPaymentStatus(paymentId);
 
-        console.log('[pollForPayment] Status check:', result);
+        console.log('[pollForPayment] Status after verification:', result);
 
         if (result.status === 'confirmed') {
           console.log('✅ Payment confirmed! Starting redirect countdown...');
@@ -115,7 +116,6 @@ export function PaymentView({ paylink }: Props) {
           if (pollingInterval) clearInterval(pollingInterval);
         }
         
-        // Check for partial payments in metadata
         if (result.metadata?.partial_payments) {
           const payments: PartialPayment[] = result.metadata.partial_payments;
           setTotalReceived(result.metadata.total_received || 0);
@@ -275,25 +275,59 @@ export function PaymentView({ paylink }: Props) {
   return (
     <Container maxWidth="sm" sx={{ py: { xs: 5, md: 10 } }}>
       <Card sx={{ p: { xs: 3, md: 5 } }}>
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 4 }}>
-          <Avatar src={merchant.logo_url || undefined} sx={{ width: 56, height: 56 }}>
-            {merchant.store_name?.charAt(0).toUpperCase()}
-          </Avatar>
-          <Box>
-            <Typography variant="h6">{merchant.store_name}</Typography>
-            <Typography variant="caption" color="text.secondary">
-              Powered by CasPay
-            </Typography>
-          </Box>
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" sx={{ mb: 4 }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Avatar src={merchant.logo_url || undefined} sx={{ width: 56, height: 56 }}>
+              {merchant.store_name?.charAt(0).toUpperCase()}
+            </Avatar>
+            <Box>
+              <Typography variant="h6">{merchant.store_name}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Powered by CasPay
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Chip
+            label="Testnet Mode"
+            size="small"
+            color="warning"
+            variant="outlined"
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.7rem',
+              height: 24,
+              borderRadius: 1,
+            }}
+          />
         </Stack>
 
         <Stack spacing={3} sx={{ mb: 4 }}>
           {product.image_url && (
-            <Box
-              component="img"
-              src={product.image_url}
-              sx={{ width: 1, height: 240, objectFit: 'cover', borderRadius: 2 }}
-            />
+            <Box sx={{ position: 'relative' }}>
+              <Box
+                component="img"
+                src={product.image_url}
+                sx={{ width: 1, height: 240, objectFit: 'cover', borderRadius: 2 }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 12,
+                  right: 12,
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1.5,
+                  bgcolor: 'rgba(0, 0, 0, 0.75)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                }}
+              >
+                <Typography variant="h5" sx={{ color: 'white', fontWeight: 700 }}>
+                  {fCurrency(product.price)} {product.currency}
+                </Typography>
+              </Box>
+            </Box>
           )}
 
           <Box>
@@ -307,16 +341,18 @@ export function PaymentView({ paylink }: Props) {
             )}
           </Box>
 
-          <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'background.neutral' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Typography variant="body2" color="text.secondary">
-                Amount
-              </Typography>
-              <Typography variant="h3">
-                {fCurrency(product.price)} {product.currency}
-              </Typography>
-            </Stack>
-          </Box>
+          {!product.image_url && (
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'background.neutral' }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="body2" color="text.secondary">
+                  Amount
+                </Typography>
+                <Typography variant="h3">
+                  {fCurrency(product.price)} {product.currency}
+                </Typography>
+              </Stack>
+            </Box>
+          )}
         </Stack>
 
         {paylink.custom_message && (

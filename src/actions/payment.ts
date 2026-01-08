@@ -188,6 +188,8 @@ export async function verifyPendingPayments(): Promise<{
   try {
     const { supabaseAdmin } = await import('src/lib/supabase');
     
+    console.log('[verifyPendingPayments] Fetching pending payments...');
+    
     const { data: pendingPayments, error } = await supabaseAdmin
       .from('payments')
       .select('*')
@@ -198,11 +200,14 @@ export async function verifyPendingPayments(): Promise<{
     if (error) throw error;
 
     if (!pendingPayments || pendingPayments.length === 0) {
+      console.log('[verifyPendingPayments] No pending payments found');
       return {
         success: true,
         summary: { total: 0, confirmed: 0, expired: 0, pending: 0, errors: 0 },
       };
     }
+
+    console.log(`[verifyPendingPayments] Found ${pendingPayments.length} pending payments`);
 
     const results = await Promise.allSettled(
       pendingPayments.map(async (payment) => {
@@ -211,6 +216,7 @@ export async function verifyPendingPayments(): Promise<{
         const now = new Date();
 
         if (now > expiresAt) {
+          console.log(`[verifyPendingPayments] Payment ${payment.id} expired`);
           await supabaseAdmin
             .from('payments')
             .update({ status: 'failed', metadata: { ...metadata, failure_reason: 'timeout' } })
@@ -222,6 +228,8 @@ export async function verifyPendingPayments(): Promise<{
         const expectedRecipient = metadata.expected_recipient;
         const expectedAmount = payment.amount;
 
+        console.log(`[verifyPendingPayments] Checking payment ${payment.id} with unique ID: ${uniqueId}`);
+
         const searchResult = await searchTransferByMemo(
           uniqueId,
           expectedRecipient,
@@ -230,6 +238,8 @@ export async function verifyPendingPayments(): Promise<{
         );
 
         if (searchResult.found && searchResult.transfers) {
+          console.log(`[verifyPendingPayments] Found ${searchResult.transfers.length} matching transfers for payment ${payment.id}`);
+          
           const existingHashes = (metadata.partial_payments || []).map((p: any) => p.hash);
           const newTransfers = searchResult.transfers.filter(
             (t) => !existingHashes.includes(t.hash)
@@ -244,6 +254,8 @@ export async function verifyPendingPayments(): Promise<{
 
           if (totalReceived >= expectedAmount) {
             const latestTransfer = newTransfers[newTransfers.length - 1];
+
+            console.log(`[verifyPendingPayments] ✅ Payment ${payment.id} confirmed! Total: ${totalReceived} CSPR`);
 
             await supabaseAdmin
               .from('payments')
@@ -264,15 +276,15 @@ export async function verifyPendingPayments(): Promise<{
               .eq('id', payment.id)
               .eq('status', 'pending');
 
-            // Increment PayLink usage
             await supabaseAdmin.rpc('increment_paylink_usage', {
               paylink_id: payment.paylink_id,
             });
 
             return { id: payment.id, result: 'confirmed' };
           } else {
-            // Partial payment
             const latestTransfer = newTransfers[newTransfers.length - 1];
+
+            console.log(`[verifyPendingPayments] ⚠️ Partial payment for ${payment.id}: ${totalReceived}/${expectedAmount} CSPR`);
 
             await supabaseAdmin.from('payments').update({
               transaction_hash: latestTransfer.hash,
@@ -303,6 +315,8 @@ export async function verifyPendingPayments(): Promise<{
       errors: results.filter((r) => r.status === 'rejected').length,
     };
 
+    console.log('[verifyPendingPayments] Summary:', summary);
+
     return { success: true, summary };
   } catch (err: any) {
     console.error('[verifyPendingPayments] Error:', err);
@@ -331,6 +345,8 @@ async function searchTransferByMemo(
     const paymentCreated = new Date(createdAt);
     const searchFromTime = new Date(paymentCreated.getTime() - 5 * 60 * 1000);
 
+    console.log(`[searchTransferByMemo] Searching for transfer ID: ${uniqueId} to ${recipientAddress.slice(0, 10)}...`);
+
     const response = await fetch(
       `https://api.testnet.cspr.cloud/accounts/${recipientAddress}/transfers?page_size=20&page_number=1&order_by=timestamp&order_direction=DESC`,
       {
@@ -341,15 +357,22 @@ async function searchTransferByMemo(
       }
     );
 
-    if (!response.ok) return { found: false };
+    if (!response.ok) {
+      console.error(`[searchTransferByMemo] API request failed: ${response.status}`);
+      return { found: false };
+    }
 
     const data = await response.json();
     const transfers = data.data || [];
+
+    console.log(`[searchTransferByMemo] Found ${transfers.length} total transfers`);
 
     const recentTransfers = transfers.filter((t: any) => {
       const transferTime = new Date(t.timestamp);
       return transferTime >= searchFromTime;
     });
+
+    console.log(`[searchTransferByMemo] ${recentTransfers.length} recent transfers (after ${searchFromTime.toISOString()})`);
 
     const matchingTransfers: Array<{
       amount: number;
@@ -362,6 +385,8 @@ async function searchTransferByMemo(
     for (const transfer of recentTransfers) {
       if (transfer.id && transfer.id.toString() === uniqueId) {
         const amountInCSPR = parseFloat(transfer.amount) / 1_000_000_000;
+
+        console.log(`[searchTransferByMemo] ✅ Match found! Transfer ID: ${transfer.id}, Amount: ${amountInCSPR} CSPR, Hash: ${transfer.deploy_hash}`);
 
         if (amountInCSPR > 0) {
           matchingTransfers.push({
@@ -376,9 +401,11 @@ async function searchTransferByMemo(
     }
 
     if (matchingTransfers.length > 0) {
+      console.log(`[searchTransferByMemo] Total matching transfers: ${matchingTransfers.length}`);
       return { found: true, transfers: matchingTransfers };
     }
 
+    console.log(`[searchTransferByMemo] No matching transfers found for ID: ${uniqueId}`);
     return { found: false };
   } catch (err) {
     console.error('[searchTransferByMemo] Error:', err);

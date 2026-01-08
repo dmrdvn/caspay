@@ -3,17 +3,21 @@ import { NextResponse } from 'next/server';
 import { verifyPendingPayments } from 'src/actions/payment';
 
 
-export async function POST(request: NextRequest) {
+async function handleVerification() {
+  console.log('[verify-payments] Starting verification cron job...');
+  
   try {
     const result = await verifyPendingPayments();
 
     if (!result.success) {
+      console.error('[verify-payments] Verification failed:', result.error);
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 500 }
       );
     }
 
+    console.log('[verify-payments] Verification completed:', result.summary);
     return NextResponse.json({ 
       success: true, 
       summary: result.summary 
@@ -25,4 +29,12 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function GET(request: NextRequest) {
+  return handleVerification();
+}
+
+export async function POST(request: NextRequest) {
+  return handleVerification();
 }
