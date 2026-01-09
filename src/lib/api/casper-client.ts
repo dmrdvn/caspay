@@ -22,6 +22,49 @@ import {
 } from 'casper-js-sdk';
 
 // ----------------------------------------------------------------------
+// Edge Runtime Compatibility - Buffer Polyfill
+// ----------------------------------------------------------------------
+
+const BufferPolyfill = (() => {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer;
+  }
+  
+  return {
+    from(data: string | number[] | Uint8Array, encoding?: BufferEncoding): Uint8Array {
+      if (typeof data === 'string') {
+        if (encoding === 'hex') {
+          const matches = data.match(/.{1,2}/g) || [];
+          return new Uint8Array(matches.map((byte) => parseInt(byte, 16)));
+        }
+        if (encoding === 'utf8' || !encoding) {
+          return new TextEncoder().encode(data);
+        }
+      }
+      if (Array.isArray(data)) {
+        return new Uint8Array(data);
+      }
+      return data as Uint8Array;
+    },
+    
+    alloc(size: number): Uint8Array {
+      return new Uint8Array(size);
+    },
+    
+    concat(buffers: Uint8Array[]): Uint8Array {
+      const totalLength = buffers.reduce((sum, buf) => sum + buf.length, 0);
+      const result = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const buf of buffers) {
+        result.set(buf, offset);
+        offset += buf.length;
+      }
+      return result;
+    },
+  };
+})();
+
+// ----------------------------------------------------------------------
 // Configuration
 // ----------------------------------------------------------------------
 
@@ -121,7 +164,7 @@ export async function callContract(
     deployHeader.chainName = NETWORK_NAME;
 
     // Contract package hash kullan (versioned contract)
-    const contractHashBytes = Buffer.from(CONTRACT_PACKAGE_HASH!, 'hex');
+    const contractHashBytes = BufferPolyfill.from(CONTRACT_PACKAGE_HASH!, 'hex');
     const hash = new Hash(contractHashBytes);
     const contractHash = new ContractHash(hash, '');
     
@@ -182,11 +225,11 @@ export function addStringArg(args: Args, name: string, value: string): void {
   const clValue = CLValue.newCLString(value);
   
   // Manual serialization
-  const stringBytes = Buffer.from(value, 'utf8');
-  const lengthBytes = Buffer.alloc(4);
-  lengthBytes.writeUInt32LE(stringBytes.length, 0);
-  const typeTag = Buffer.from([10]); // CLType String = 10
-  const serialized = Buffer.concat([lengthBytes, stringBytes, typeTag]);
+  const stringBytes = BufferPolyfill.from(value, 'utf8');
+  const lengthBytes = BufferPolyfill.alloc(4);
+  new DataView(lengthBytes.buffer).setUint32(0, stringBytes.length, true);
+  const typeTag = BufferPolyfill.from([10]); // CLType String = 10
+  const serialized = BufferPolyfill.concat([lengthBytes, stringBytes, typeTag]);
   
   // DON'T override bytes() - instead set bytes property directly
   Object.defineProperty(clValue, 'bytes', {
@@ -206,10 +249,10 @@ export function addU32Arg(args: Args, name: string, value: number): void {
   const clValue = CLValue.newCLUInt32(value);
   
   // Manual serialization for u32
-  const buffer = Buffer.alloc(4);
-  buffer.writeUInt32LE(value, 0);
-  const typeTag = Buffer.from([1]); // CLType U32 = 1
-  const serialized = Buffer.concat([buffer, typeTag]);
+  const buffer = BufferPolyfill.alloc(4);
+  new DataView(buffer.buffer).setUint32(0, value, true);
+  const typeTag = BufferPolyfill.from([1]); // CLType U32 = 1
+  const serialized = BufferPolyfill.concat([buffer, typeTag]);
   
   Object.defineProperty(clValue, 'bytes', {
     value: () => serialized,
@@ -228,9 +271,9 @@ export function addBoolArg(args: Args, name: string, value: boolean): void {
   const clValue = CLValue.newCLValueBool(value);
   
   // Manual serialization for bool
-  const boolByte = Buffer.from([value ? 1 : 0]);
-  const typeTag = Buffer.from([0]); // CLType Bool = 0
-  const serialized = Buffer.concat([boolByte, typeTag]);
+  const boolByte = BufferPolyfill.from([value ? 1 : 0]);
+  const typeTag = BufferPolyfill.from([0]); // CLType Bool = 0
+  const serialized = BufferPolyfill.concat([boolByte, typeTag]);
   
   Object.defineProperty(clValue, 'bytes', {
     value: () => serialized,
@@ -253,7 +296,7 @@ export function addU512Arg(args: Args, name: string, value: string): void {
   
   if (bigIntValue === BigInt(0)) {
     // Special case for zero
-    const serialized = Buffer.concat([Buffer.from([1, 0]), Buffer.from([8])]);
+    const serialized = BufferPolyfill.concat([BufferPolyfill.from([1, 0]), BufferPolyfill.from([8])]);
     Object.defineProperty(clValue, 'bytes', {
       value: () => serialized,
       writable: false,
@@ -268,12 +311,12 @@ export function addU512Arg(args: Args, name: string, value: string): void {
   let hex = bigIntValue.toString(16);
   if (hex.length % 2) hex = '0' + hex; // Pad to even length
   
-  const valueBytes = Buffer.from(hex, 'hex');
-  const reversedBytes = Buffer.from(valueBytes).reverse(); // Little-endian
+  const valueBytes = BufferPolyfill.from(hex, 'hex');
+  const reversedBytes = BufferPolyfill.from(valueBytes).reverse(); // Little-endian
   
-  const lengthByte = Buffer.from([reversedBytes.length]);
-  const typeTag = Buffer.from([8]); // CLType U512 = 8
-  const serialized = Buffer.concat([lengthByte, reversedBytes, typeTag]);
+  const lengthByte = BufferPolyfill.from([reversedBytes.length]);
+  const typeTag = BufferPolyfill.from([8]); // CLType U512 = 8
+  const serialized = BufferPolyfill.concat([lengthByte, reversedBytes, typeTag]);
   
   Object.defineProperty(clValue, 'bytes', {
     value: () => serialized,
@@ -294,8 +337,8 @@ export function addPublicKeyArg(args: Args, name: string, value: PublicKey): voi
   
   // Manual serialization
   const pubKeyRaw = value.bytes(); // Get raw bytes
-  const typeTag = Buffer.from([22]); // CLType PublicKey = 22
-  const serialized = Buffer.concat([Buffer.from(pubKeyRaw), typeTag]);
+  const typeTag = BufferPolyfill.from([22]); // CLType PublicKey = 22
+  const serialized = BufferPolyfill.concat([BufferPolyfill.from(pubKeyRaw), typeTag]);
   
   Object.defineProperty(clValue, 'bytes', {
     value: () => serialized,

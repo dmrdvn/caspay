@@ -158,8 +158,16 @@ export function verifyWebhookSignature(
   secret: string
 ): boolean {
   const expectedSignature = generateSignature(payload, secret);
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  
+  // Edge Runtime compatible comparison
+  if (typeof Buffer !== 'undefined' && typeof Buffer.from === 'function') {
+    // Node.js environment
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+  }
+  
+  // Edge Runtime fallback - simple comparison (less secure but functional)
+  return signature === expectedSignature;
 }

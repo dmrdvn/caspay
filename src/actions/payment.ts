@@ -238,26 +238,45 @@ export async function verifyPendingPayments(): Promise<{
         );
 
         if (searchResult.found && searchResult.transfers) {
-          console.log(`[verifyPendingPayments] Found ${searchResult.transfers.length} matching transfers for payment ${payment.id}`);
+          console.log(`[verifyPendingPayments] ✅ Found ${searchResult.transfers.length} matching transfers for payment ${payment.id}`);
+          console.log(`[verifyPendingPayments] Payment details:`, {
+            paymentId: payment.id,
+            uniqueId,
+            expectedAmount,
+            expectedRecipient: expectedRecipient.slice(0, 20) + '...',
+          });
           
           const existingHashes = (metadata.partial_payments || []).map((p: any) => p.hash);
           const newTransfers = searchResult.transfers.filter(
             (t) => !existingHashes.includes(t.hash)
           );
 
+          console.log(`[verifyPendingPayments] Existing transfers: ${existingHashes.length}, New transfers: ${newTransfers.length}`);
+
           if (newTransfers.length === 0) {
+            console.log(`[verifyPendingPayments] No new transfers, payment ${payment.id} remains pending`);
             return { id: payment.id, result: 'pending' };
           }
 
           const allTransfers = [...(metadata.partial_payments || []), ...newTransfers];
           const totalReceived = allTransfers.reduce((sum: number, t: any) => sum + t.amount, 0);
 
+          console.log(`[verifyPendingPayments] 💰 Total received: ${totalReceived} CSPR / Expected: ${expectedAmount} CSPR`);
+
           if (totalReceived >= expectedAmount) {
             const latestTransfer = newTransfers[newTransfers.length - 1];
 
-            console.log(`[verifyPendingPayments] ✅ Payment ${payment.id} confirmed! Total: ${totalReceived} CSPR`);
+            console.log(`[verifyPendingPayments] ✅ Payment ${payment.id} FULLY PAID! Marking as confirmed...`);
+            console.log(`[verifyPendingPayments] Latest transfer details:`, {
+              hash: latestTransfer.hash,
+              sender: latestTransfer.sender.slice(0, 20) + '...',
+              amount: latestTransfer.amount,
+              blockHeight: latestTransfer.blockHeight,
+            });
 
-            await supabaseAdmin
+            console.log(`[verifyPendingPayments] 📝 Updating Supabase: payment ${payment.id} -> confirmed`);
+            
+            const { error: updateError } = await supabaseAdmin
               .from('payments')
               .update({
                 status: 'confirmed',
@@ -276,17 +295,33 @@ export async function verifyPendingPayments(): Promise<{
               .eq('id', payment.id)
               .eq('status', 'pending');
 
-            await supabaseAdmin.rpc('increment_paylink_usage', {
+            if (updateError) {
+              console.error(`[verifyPendingPayments] ❌ Supabase update failed for payment ${payment.id}:`, updateError);
+              throw updateError;
+            }
+
+            console.log(`[verifyPendingPayments] ✅ Supabase updated successfully! Payment ${payment.id} is now CONFIRMED`);
+
+            console.log(`[verifyPendingPayments] 📊 Incrementing PayLink usage for paylink_id: ${payment.paylink_id}`);
+            
+            const { error: rpcError } = await supabaseAdmin.rpc('increment_paylink_usage', {
               paylink_id: payment.paylink_id,
             });
+
+            if (rpcError) {
+              console.error(`[verifyPendingPayments] ⚠️ Failed to increment PayLink usage:`, rpcError);
+            } else {
+              console.log(`[verifyPendingPayments] ✅ PayLink usage incremented successfully`);
+            }
 
             return { id: payment.id, result: 'confirmed' };
           } else {
             const latestTransfer = newTransfers[newTransfers.length - 1];
 
-            console.log(`[verifyPendingPayments] ⚠️ Partial payment for ${payment.id}: ${totalReceived}/${expectedAmount} CSPR`);
+            console.log(`[verifyPendingPayments] ⚠️ PARTIAL payment for ${payment.id}: ${totalReceived}/${expectedAmount} CSPR`);
+            console.log(`[verifyPendingPayments] 📝 Updating Supabase with partial payment info...`);
 
-            await supabaseAdmin.from('payments').update({
+            const { error: updateError } = await supabaseAdmin.from('payments').update({
               transaction_hash: latestTransfer.hash,
               payer_address: latestTransfer.sender,
               block_height: latestTransfer.blockHeight,
@@ -299,10 +334,17 @@ export async function verifyPendingPayments(): Promise<{
               },
             }).eq('id', payment.id);
 
+            if (updateError) {
+              console.error(`[verifyPendingPayments] ❌ Partial payment update failed:`, updateError);
+            } else {
+              console.log(`[verifyPendingPayments] ✅ Partial payment info saved to Supabase`);
+            }
+
             return { id: payment.id, result: 'partial' };
           }
         }
 
+        console.log(`[verifyPendingPayments] ⏳ No matching transfers found yet for payment ${payment.id}`);
         return { id: payment.id, result: 'pending' };
       })
     );
@@ -345,7 +387,15 @@ async function searchTransferByMemo(
     const paymentCreated = new Date(createdAt);
     const searchFromTime = new Date(paymentCreated.getTime() - 5 * 60 * 1000);
 
-    console.log(`[searchTransferByMemo] Searching for transfer ID: ${uniqueId} to ${recipientAddress.slice(0, 10)}...`);
+    console.log(`[searchTransferByMemo] 🔍 Searching for transfer ID: ${uniqueId} to ${recipientAddress.slice(0, 10)}...`);
+    console.log(`[searchTransferByMemo] Search parameters:`, {
+      uniqueId,
+      recipientAddress: recipientAddress.slice(0, 20) + '...',
+      expectedAmount,
+      searchFromTime: searchFromTime.toISOString(),
+    });
+
+    console.log(`[searchTransferByMemo] 🌐 Calling CSPR.cloud API...`);
 
     const response = await fetch(
       `https://api.testnet.cspr.cloud/accounts/${recipientAddress}/transfers?page_size=20&page_number=1&order_by=timestamp&order_direction=DESC`,
@@ -358,21 +408,23 @@ async function searchTransferByMemo(
     );
 
     if (!response.ok) {
-      console.error(`[searchTransferByMemo] API request failed: ${response.status}`);
+      console.error(`[searchTransferByMemo] ❌ API request failed: ${response.status} ${response.statusText}`);
       return { found: false };
     }
+
+    console.log(`[searchTransferByMemo] ✅ API response received successfully`);
 
     const data = await response.json();
     const transfers = data.data || [];
 
-    console.log(`[searchTransferByMemo] Found ${transfers.length} total transfers`);
+    console.log(`[searchTransferByMemo] 📊 Found ${transfers.length} total transfers`);
 
     const recentTransfers = transfers.filter((t: any) => {
       const transferTime = new Date(t.timestamp);
       return transferTime >= searchFromTime;
     });
 
-    console.log(`[searchTransferByMemo] ${recentTransfers.length} recent transfers (after ${searchFromTime.toISOString()})`);
+    console.log(`[searchTransferByMemo] 🕒 ${recentTransfers.length} recent transfers (after ${searchFromTime.toISOString()})`);
 
     const matchingTransfers: Array<{
       amount: number;
@@ -382,11 +434,21 @@ async function searchTransferByMemo(
       timestamp: string;
     }> = [];
 
+    console.log(`[searchTransferByMemo] 🔎 Checking each transfer for matching ID...`);
+
     for (const transfer of recentTransfers) {
       if (transfer.id && transfer.id.toString() === uniqueId) {
         const amountInCSPR = parseFloat(transfer.amount) / 1_000_000_000;
 
-        console.log(`[searchTransferByMemo] ✅ Match found! Transfer ID: ${transfer.id}, Amount: ${amountInCSPR} CSPR, Hash: ${transfer.deploy_hash}`);
+        console.log(`[searchTransferByMemo] ✅ MATCH FOUND!`);
+        console.log(`[searchTransferByMemo] Transfer details:`, {
+          transferId: transfer.id,
+          deployHash: transfer.deploy_hash,
+          amount: amountInCSPR + ' CSPR',
+          sender: transfer.initiator_account_hash?.slice(0, 20) + '...',
+          blockHeight: transfer.block_height,
+          timestamp: transfer.timestamp,
+        });
 
         if (amountInCSPR > 0) {
           matchingTransfers.push({
@@ -396,19 +458,22 @@ async function searchTransferByMemo(
             blockHeight: transfer.block_height,
             timestamp: transfer.timestamp,
           });
+          console.log(`[searchTransferByMemo] ✅ Transfer added to matching list (amount > 0)`);
+        } else {
+          console.log(`[searchTransferByMemo] ⚠️ Transfer amount is 0, skipping...`);
         }
       }
     }
 
     if (matchingTransfers.length > 0) {
-      console.log(`[searchTransferByMemo] Total matching transfers: ${matchingTransfers.length}`);
+      console.log(`[searchTransferByMemo] ✅ SUCCESS! Total matching transfers: ${matchingTransfers.length}`);
       return { found: true, transfers: matchingTransfers };
     }
 
-    console.log(`[searchTransferByMemo] No matching transfers found for ID: ${uniqueId}`);
+    console.log(`[searchTransferByMemo] ❌ No matching transfers found for ID: ${uniqueId}`);
     return { found: false };
   } catch (err) {
-    console.error('[searchTransferByMemo] Error:', err);
+    console.error('[searchTransferByMemo] ❌ Exception occurred:', err);
     return { found: false };
   }
 }
