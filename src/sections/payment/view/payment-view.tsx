@@ -373,6 +373,14 @@ export function PaymentView({ paylink }: Props) {
             Payment Method
           </Typography>
 
+          {(!paylink.payment_methods || paylink.payment_methods.length === 0) && (
+            <Alert severity="warning">
+              <Typography variant="caption">
+                No payment methods configured for this link
+              </Typography>
+            </Alert>
+          )}
+
           {paylink.payment_methods.includes('wallet') && (
             <Button
               fullWidth
@@ -384,6 +392,35 @@ export function PaymentView({ paylink }: Props) {
             >
               {paylink.custom_button_text || 'Pay with Crypto'}
             </Button>
+          )}
+
+          {paylink.payment_methods.includes('fiat') && (
+            <Box sx={{ position: 'relative' }}>
+              <Button
+                fullWidth
+                size="large"
+                variant="outlined"
+                disabled
+                startIcon={<Iconify icon="solar:dollar-bold" />}
+              >
+                Pay with Card
+              </Button>
+              <Chip
+                label="Coming Soon"
+                size="small"
+                color="warning"
+                sx={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -8,
+                  fontWeight: 600,
+                  fontSize: '0.65rem',
+                  height: 20,
+                  borderRadius: 1,
+                  boxShadow: 1,
+                }}
+              />
+            </Box>
           )}
         </Stack>
 

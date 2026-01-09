@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
@@ -146,10 +147,18 @@ export function PayLinkCreateForm({ merchantId }: Props) {
               label="Payment Methods"
               options={[
                 { label: 'Wallet (Crypto)', value: 'wallet' },
-                { label: 'Fiat (Credit Card)', value: 'fiat' },
+                { label: 'Fiat (Credit Card) - Coming Soon', value: 'fiat' },
               ]}
-              helperText="Select allowed payment methods"
+              helperText="Select allowed payment methods. Wallet payments are fully functional, fiat integration coming soon."
             />
+
+            <Alert severity="info" sx={{ py: 1 }}>
+              <Typography variant="caption">
+                <strong>Wallet Payment:</strong> Fully active - customers can pay with CSPR via Casper Wallet
+                <br />
+                <strong>Fiat Payment:</strong> Display option available, integration under development
+              </Typography>
+            </Alert>
 
             <Field.DateTimePicker
               name="expires_at"
