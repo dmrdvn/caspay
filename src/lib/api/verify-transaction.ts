@@ -22,14 +22,21 @@ export interface TransactionVerification {
   error?: string;
 }
 
-// Casper RPC endpoint (from env or default)
-const CASPER_NODE_URL = process.env.CASPER_NODE_URL || 'https://node.casper.network/rpc';
+// Casper RPC endpoint (testnet or mainnet based on env)
+const CASPER_NODE_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://node.testnet.cspr.cloud/rpc';
+const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
 
 // Lazy initialization to avoid constructor error
 let casperClient: RpcClient | null = null;
 function getCasperClient(): RpcClient {
   if (!casperClient) {
-    casperClient = new RpcClient(new HttpHandler(CASPER_NODE_URL));
+    const handler = new HttpHandler(CASPER_NODE_URL);
+    if (CSPR_CLOUD_API_KEY) {
+      handler.setCustomHeaders({
+        'Authorization': CSPR_CLOUD_API_KEY
+      });
+    }
+    casperClient = new RpcClient(handler);
   }
   return casperClient;
 }
@@ -39,6 +46,9 @@ function getCasperClient(): RpcClient {
  * 
  * MOCK MODE: For testing without blockchain
  * Set MOCK_TRANSACTION_VERIFICATION=true to bypass blockchain checks
+ * 
+ * FAKE HASH DETECTION: Automatically detects demo/test hashes
+ * Patterns: demo_tx_*, mock_tx_*, test_tx_*
  */
 export async function verifyTransaction(
   deployHash: string,
@@ -49,13 +59,17 @@ export async function verifyTransaction(
   // MOCK MODE: Skip blockchain verification for testing
   const mockMode = process.env.MOCK_TRANSACTION_VERIFICATION === 'true';
   
-  if (mockMode) {
-    console.log('[verifyTransaction] MOCK MODE: Bypassing blockchain verification');
+  // AUTO-DETECT FAKE HASH: Check if hash is a demo/test hash
+  const isFakeHash = /^(demo_tx_|mock_tx_|test_tx_)/i.test(deployHash);
+  
+  if (mockMode || isFakeHash) {
+    console.log('[verifyTransaction] MOCK/FAKE MODE: Bypassing blockchain verification');
     console.log('[verifyTransaction] Mock tx:', {
       deployHash,
       expectedRecipient,
       expectedAmount,
-      senderAddress
+      senderAddress,
+      reason: mockMode ? 'MOCK_MODE_ENABLED' : 'FAKE_HASH_DETECTED'
     });
     
     // Return mock successful verification with user-provided sender

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CasPay SDK Html Demo - Interactive Payment Testing</title>
+  <title>CasPay SDK Demo - Payment Gateway with Casper Wallet</title>
   <style>
     * {
       margin: 0;
@@ -13,14 +13,108 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #3f4041;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
       min-height: 100vh;
-      padding: 24px;
+      padding: 0;
+      margin: 0;
     }
 
     .container {
       max-width: 1400px;
       margin: 0 auto;
+      padding: 24px;
+    }
+
+    .top-bar {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      margin-bottom: 24px;
+    }
+
+    .top-bar-left h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00b8d9 0%, #0288d1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .wallet-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(0, 184, 217, 0.12);
+      border: 1px solid rgba(0, 184, 217, 0.3);
+      border-radius: 10px;
+      font-size: 13px;
+      color: #212b36;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00c853;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .wallet-addr {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #637381;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .connect-wallet-btn {
+      background: linear-gradient(135deg, #00b8d9 0%, #0288d1 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 184, 217, 0.3);
+    }
+
+    .connect-wallet-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 184, 217, 0.4);
+    }
+
+    .connect-wallet-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
     }
 
     .header {
@@ -156,24 +250,26 @@
       font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: opacity 0.2s;
       font-family: inherit;
     }
 
     .btn-primary {
       background: linear-gradient(135deg, rgb(0, 184, 217) 0%, rgb(0, 108, 156) 100%);
       color: #fff;
-      box-shadow: 0 8px 16px 0 rgba(0, 184, 217, 0.24);
     }
 
     .btn-primary:hover:not(:disabled) {
-      box-shadow: 0 0 0 0 rgba(0, 184, 217, 0.24), 0 16px 32px -4px rgba(0, 184, 217, 0.24);
+      opacity: 0.9;
     }
 
     .btn-info {
       background: linear-gradient(135deg, rgb(0, 108, 156) 0%, rgb(0, 75, 107) 100%);
       color: #fff;
-      box-shadow: 0 8px 16px 0 rgba(0, 108, 156, 0.24);
+    }
+
+    .btn-info:hover:not(:disabled) {
+      opacity: 0.9;
     }
 
     .btn:disabled {
@@ -225,9 +321,11 @@
     }
 
     .col-12 { grid-column: span 12; }
+    .col-6 { grid-column: span 6; }
     .col-4 { grid-column: span 4; }
 
     @media (max-width: 1024px) {
+      .col-6 { grid-column: span 12; }
       .col-4 { grid-column: span 6; }
     }
 
@@ -235,9 +333,156 @@
       .col-4 { grid-column: span 12; }
       body { padding: 16px; }
     }
+
+    /* Result Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #161c24;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      animation: modalIn 0.3s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 40px;
+    }
+
+    .modal-icon.success {
+      background: rgba(34, 197, 94, 0.16);
+      color: rgb(34, 197, 94);
+    }
+
+    .modal-icon.error {
+      background: rgba(255, 86, 48, 0.16);
+      color: rgb(255, 86, 48);
+    }
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .modal-subtitle {
+      font-size: 14px;
+      color: #919eab;
+      margin-bottom: 24px;
+    }
+
+    .modal-details {
+      background: rgba(145, 158, 171, 0.08);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .modal-details-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(145, 158, 171, 0.16);
+    }
+
+    .modal-details-row:last-child {
+      border-bottom: none;
+    }
+
+    .modal-details-label {
+      color: #919eab;
+      font-size: 14px;
+    }
+
+    .modal-details-value {
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      word-break: break-all;
+      text-align: right;
+      max-width: 200px;
+    }
+
+    .modal-details-value a {
+      color: rgb(0, 184, 217);
+      text-decoration: none;
+    }
+
+    .modal-details-value a:hover {
+      text-decoration: underline;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .modal-btn-primary {
+      background: linear-gradient(135deg, rgb(0, 184, 217) 0%, rgb(0, 108, 156) 100%);
+      color: #fff;
+    }
+
+    .modal-btn-secondary {
+      background: rgba(145, 158, 171, 0.16);
+      color: #fff;
+    }
   </style>
 </head>
 <body>
+  <!-- Top Bar with Connect Wallet -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <h1>CasPay SDK Demo</h1>
+    </div>
+    <div class="top-bar-right">
+      <div id="walletStatusBox" class="wallet-status" style="display: none;">
+        <div class="status-dot"></div>
+        <span id="walletAddressShort" class="wallet-addr"></span>
+      </div>
+      <button id="connectWalletBtn" class="connect-wallet-btn">
+        <span>🔗</span>
+        <span>Connect Wallet</span>
+      </button>
+    </div>
+  </div>
+
   <div class="container">
     <div class="header">
       <div class="breadcrumb">
@@ -245,7 +490,7 @@
         <span>/</span>
         <span>CasPay SDK Demo</span>
       </div>
-      <h1>CasPay SDK Demo Interface</h1>
+      <h1>CasPay SDK HTML Demo</h1>
     </div>
 
     <div class="grid">
@@ -255,7 +500,7 @@
           <div class="card-title">Configuration</div>
           <div class="card-subtitle">Set your merchant credentials</div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
           <div class="form-group" style="margin-bottom: 0;">
             <label>Merchant ID</label>
             <input type="text" id="merchantId" placeholder="Enter your merchant ID">
@@ -264,38 +509,25 @@
             <label>API Key</label>
             <input type="text" id="apiKey" placeholder="Enter your API key">
           </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Wallet Address (Receive Payments)</label>
+            <input type="text" id="walletAddress" placeholder="Merchant wallet to receive payments">
+          </div>
         </div>
       </div>
 
-      <!-- Product Payment Card -->
-      <div class="card col-4">
+      <!-- No Wallet Connection Card Needed Anymore -->
+      <!-- Product Payment Card - Full Management -->
+      <div class="card col-6">
         <div class="card-header">
           <div class="card-title">
-            Product Purchase
-            <span class="badge badge-secondary">One-Time</span>
+            Pay with Wallet
+            <span class="badge badge-secondary">Full Management</span>
           </div>
-          <div class="card-subtitle">One-time Payment</div>
+          <div class="card-subtitle">CasPay handles wallet connection, transfer & recording</div>
         </div>
         
         <form id="productForm">
-          <div class="form-group">
-            <label>Sender Wallet Address</label>
-            <textarea 
-              id="productSender" 
-              placeholder="Your Casper wallet public key"
-              required
-            ></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Transaction Hash (Optional)</label>
-            <input 
-              type="text" 
-              id="productTxHash" 
-              placeholder="Leave empty for mock mode"
-            />
-          </div>
-
           <div class="form-group">
             <label>Product ID</label>
             <input 
@@ -306,49 +538,97 @@
           </div>
 
           <div class="form-group">
-            <label>Amount (USD)</label>
+            <label>Amount (CSPR)</label>
             <input 
               type="number" 
               id="productAmount" 
-              step="0.01"
+              step="0.1"
+              placeholder="Amount in CSPR"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Memo (Optional)</label>
+            <input 
+              type="text" 
+              id="productMemo" 
+              placeholder="Payment note"
             />
           </div>
 
           <button type="submit" class="btn btn-primary" id="productBtn">
-            Process Payment
+            Pay with Wallet
           </button>
         </form>
       </div>
 
-      <!-- Subscription Payment Card -->
-      <div class="card col-4">
+      <!-- Tracking Only Card -->
+      <div class="card col-6">
         <div class="card-header">
           <div class="card-title">
-            Subscription
-            <span class="badge badge-primary">Recurring</span>
+            Record Payment
+            <span class="badge badge-primary">Tracking Only</span>
           </div>
-          <div class="card-subtitle">Recurring Payment</div>
+          <div class="card-subtitle">Merchant handles payment, CasPay records & tracks analytics</div>
         </div>
         
-        <form id="subscriptionForm">
+        <div style="background: rgba(0, 184, 217, 0.08); border: 1px solid rgba(0, 184, 217, 0.24); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+          <div style="font-size: 12px; color: #919eab; line-height: 1.5;">
+            <strong style="color: rgb(0, 184, 217);">ℹ️ Tracking Mode:</strong> Merchant integrates Casper Wallet in their dApp, makes the payment, then records it here for analytics tracking.
+          </div>
+        </div>
+        
+        <form id="trackingForm">
           <div class="form-group">
-            <label>Sender Wallet Address</label>
-            <textarea 
-              id="subSender" 
-              placeholder="Your Casper wallet public key"
-              required
-            ></textarea>
+            <label>Product ID</label>
+            <input 
+              type="text" 
+              id="trackingProductId"
+              placeholder="Product ID"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Amount (CSPR)</label>
+            <input 
+              type="number" 
+              id="trackingAmount" 
+              step="0.1"
+              placeholder="Amount in CSPR"
+            />
           </div>
 
           <div class="form-group">
             <label>Transaction Hash (Optional)</label>
             <input 
               type="text" 
-              id="subTxHash" 
-              placeholder="Leave empty for mock mode"
+              id="trackingHash"
+              placeholder="Leave empty to auto-generate demo hash"
             />
           </div>
 
+          <button type="submit" class="btn btn-info" id="trackingBtn">
+            Record Payment
+          </button>
+        </form>
+      </div>
+
+      <!-- Divider -->
+      <div class="col-12" style="margin: 24px 0;">
+        <div style="border-top: 1px solid rgba(145, 158, 171, 0.24);"></div>
+      </div>
+
+      <!-- Subscription Payment Card -->
+      <div class="card col-4">
+        <div class="card-header">
+          <div class="card-title">
+            Subscribe with Wallet
+            <span class="badge badge-secondary">Full Management</span>
+          </div>
+          <div class="card-subtitle">CasPay handles recurring subscription payments</div>
+        </div>
+        
+        <form id="subscriptionForm">
           <div class="form-group">
             <label>Plan ID</label>
             <input 
@@ -359,17 +639,77 @@
           </div>
 
           <div class="form-group">
-            <label>Amount (USD)</label>
+            <label>Amount (CSPR)</label>
             <input 
               type="number" 
               id="subAmount" 
-               
-              step="0.01"
+              step="0.1"
+              placeholder="Amount in CSPR"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Memo (Optional)</label>
+            <input 
+              type="text" 
+              id="subMemo" 
+              placeholder="Subscription note"
             />
           </div>
 
           <button type="submit" class="btn btn-primary" id="subBtn">
-            Start Subscription
+            Subscribe with Wallet
+          </button>
+        </form>
+      </div>
+
+      <!-- Subscription Tracking Card -->
+      <div class="card col-4">
+        <div class="card-header">
+          <div class="card-title">
+            Record Subscription
+            <span class="badge badge-primary">Tracking Only</span>
+          </div>
+          <div class="card-subtitle">Merchant handles subscription, CasPay tracks renewals</div>
+        </div>
+        
+        <div style="background: rgba(0, 184, 217, 0.08); border: 1px solid rgba(0, 184, 217, 0.24); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+          <div style="font-size: 12px; color: #919eab; line-height: 1.5;">
+            <strong style="color: rgb(0, 184, 217);">ℹ️ Tracking Mode:</strong> For recurring subscriptions managed by merchant.
+          </div>
+        </div>
+        
+        <form id="trackingSubForm">
+          <div class="form-group">
+            <label>Plan ID</label>
+            <input 
+              type="text" 
+              id="trackingSubPlanId"
+              placeholder="Plan ID"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Amount (CSPR)</label>
+            <input 
+              type="number" 
+              id="trackingSubAmount" 
+              step="0.1"
+              placeholder="Amount in CSPR"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Transaction Hash (Optional)</label>
+            <input 
+              type="text" 
+              id="trackingSubHash"
+              placeholder="Leave empty to auto-generate demo hash"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-info" id="trackingSubBtn">
+            Record Subscription
           </button>
         </form>
       </div>
@@ -422,27 +762,97 @@
     </div>
   </div>
 
-  <!-- Load CasPay SDK from CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@caspay/sdk@1.0.4/dist/caspay.min.js"></script>
+  <!-- Load CasPay SDK -->
+  <script src="/sdk/caspay.min.js"></script>
   
   <script>
-    // Initialize CasPay SDK
+    let caspay = null;
+    let walletConnected = false;
+
+    function updateWalletStatus(connected, address) {
+      const statusBox = document.getElementById('walletStatusBox');
+      const addressShort = document.getElementById('walletAddressShort');
+      const btn = document.getElementById('connectWalletBtn');
+
+      if (connected && address) {
+        statusBox.style.display = 'flex';
+        addressShort.textContent = `${address.slice(0, 10)}...${address.slice(-8)}`;
+        btn.innerHTML = '<span>❌</span><span>Disconnect</span>';
+        walletConnected = true;
+      } else {
+        statusBox.style.display = 'none';
+        btn.innerHTML = '<span>🔗</span><span>Connect Wallet</span>';
+        walletConnected = false;
+      }
+    }
+
     function initCasPay() {
       const merchantId = document.getElementById('merchantId').value;
       const apiKey = document.getElementById('apiKey').value;
+      const walletAddress = document.getElementById('walletAddress').value;
 
-      if (!merchantId || !apiKey) {
-        alert('Please enter Merchant ID and API Key first');
+      if (!merchantId || !apiKey || !walletAddress) {
+        alert('Please enter Merchant ID, API Key, and Wallet Address first');
         return null;
       }
 
-      return new CasPay({
-        apiKey,
-        merchantId
-      });
+      if (!caspay) {
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const baseUrl = isLocalhost ? `${window.location.origin}/api` : 'https://caspay.link/api';
+        
+        caspay = new CasPay({
+          apiKey,
+          merchantId,
+          walletAddress,
+          network: 'testnet',
+          baseUrl
+        });
+      }
+
+      return caspay;
     }
 
-    // Product Payment Handler
+    document.getElementById('connectWalletBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('connectWalletBtn');
+      
+      // If already connected, disconnect
+      if (walletConnected) {
+        if (caspay) {
+          await caspay.wallet.disconnect();
+        }
+        updateWalletStatus(false, null);
+        return;
+      }
+
+      btn.innerHTML = '<span class="loading"></span>Connecting...';
+      btn.disabled = true;
+
+      try {
+        // Create temporary SDK instance just for wallet connection
+        const tempSDK = new CasPay({
+          apiKey: 'temp',
+          merchantId: 'temp',
+          walletAddress: 'temp',
+          network: 'testnet',
+          baseUrl: window.location.hostname === 'localhost' ? `${window.location.origin}/api` : 'https://caspay.link/api'
+        });
+
+        const address = await tempSDK.wallet.connect();
+        updateWalletStatus(true, address);
+      } catch (error) {
+        if (error.installUrl) {
+          if (confirm('Casper Wallet not found. Would you like to install it?')) {
+            window.open(error.installUrl, '_blank');
+          }
+        } else {
+          alert(error.message || 'Failed to connect wallet');
+        }
+      } finally {
+        btn.innerHTML = '<span>Connect Wallet</span>';
+        btn.disabled = false;
+      }
+    });
+
     document.getElementById('productForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -452,22 +862,25 @@
       btn.disabled = true;
 
       try {
-        const caspay = initCasPay();
-        if (!caspay) {
+        const sdk = initCasPay();
+        if (!sdk) {
           btn.innerHTML = originalText;
           btn.disabled = false;
           return;
         }
 
-        const payment = await caspay.payments.create({
-          senderAddress: document.getElementById('productSender').value,
-          transactionHash: document.getElementById('productTxHash').value,
+        const result = await sdk.payments.makePayment({
           productId: document.getElementById('productId').value,
           amount: parseFloat(document.getElementById('productAmount').value),
-          currency: 'USD'
+          memo: document.getElementById('productMemo').value || undefined
         });
 
-        displayResponse(payment, true);
+        displayResponse(result, result.success);
+        
+        if (result.success) {
+          const address = await sdk.wallet.getAddress();
+          updateWalletStatus(true, address);
+        }
       } catch (error) {
         displayResponse(error, false);
       } finally {
@@ -476,7 +889,64 @@
       }
     });
 
-    // Subscription Payment Handler
+    document.getElementById('trackingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('trackingBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading"></span>Recording...';
+      btn.disabled = true;
+
+      try {
+        const sdk = initCasPay();
+        if (!sdk) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        // Get wallet address from connected wallet
+        let senderAddress;
+        try {
+          senderAddress = await sdk.wallet.getAddress();
+        } catch (err) {
+          // If wallet not connected, use demo address
+          senderAddress = '0145ab3c7d9e8f2a1b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c';
+        }
+
+        let transactionHash = document.getElementById('trackingHash').value;
+        const productId = document.getElementById('trackingProductId').value;
+        const amount = parseFloat(document.getElementById('trackingAmount').value);
+
+        // Auto-generate demo hash if empty
+        if (!transactionHash || transactionHash.trim() === '') {
+          transactionHash = 'demo_tx_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+
+        if (!productId || !amount) {
+          alert('Please fill Product ID and Amount');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        const result = await sdk.payments.recordPayment({
+          senderAddress,
+          transactionHash,
+          productId,
+          amount,
+          currency: 'CSPR'
+        });
+
+        displayResponse(result, result.success);
+      } catch (error) {
+        displayResponse(error, false);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
     document.getElementById('subscriptionForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -486,22 +956,25 @@
       btn.disabled = true;
 
       try {
-        const caspay = initCasPay();
-        if (!caspay) {
+        const sdk = initCasPay();
+        if (!sdk) {
           btn.innerHTML = originalText;
           btn.disabled = false;
           return;
         }
 
-        const payment = await caspay.payments.create({
-          senderAddress: document.getElementById('subSender').value,
-          transactionHash: document.getElementById('subTxHash').value,
+        const result = await sdk.payments.makePayment({
           subscriptionPlanId: document.getElementById('planId').value,
           amount: parseFloat(document.getElementById('subAmount').value),
-          currency: 'USD'
+          memo: document.getElementById('subMemo').value || undefined
         });
 
-        displayResponse(payment, true);
+        displayResponse(result, result.success);
+        
+        if (result.success) {
+          const address = await sdk.wallet.getAddress();
+          updateWalletStatus(true, address);
+        }
       } catch (error) {
         displayResponse(error, false);
       } finally {
@@ -510,7 +983,64 @@
       }
     });
 
-    // Subscription Check Handler (still uses direct fetch - SDK will add this later)
+    document.getElementById('trackingSubForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const btn = document.getElementById('trackingSubBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="loading"></span>Recording...';
+      btn.disabled = true;
+
+      try {
+        const sdk = initCasPay();
+        if (!sdk) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        // Get wallet address from connected wallet
+        let senderAddress;
+        try {
+          senderAddress = await sdk.wallet.getAddress();
+        } catch (err) {
+          // If wallet not connected, use demo address
+          senderAddress = '0145ab3c7d9e8f2a1b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c';
+        }
+
+        let transactionHash = document.getElementById('trackingSubHash').value;
+        const planId = document.getElementById('trackingSubPlanId').value;
+        const amount = parseFloat(document.getElementById('trackingSubAmount').value);
+
+        // Auto-generate demo hash if empty
+        if (!transactionHash || transactionHash.trim() === '') {
+          transactionHash = 'demo_tx_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        }
+
+        if (!planId || !amount) {
+          alert('Please fill Plan ID and Amount');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        const result = await sdk.payments.recordSubscription({
+          senderAddress,
+          transactionHash,
+          subscriptionPlanId: planId,
+          amount,
+          currency: 'CSPR'
+        });
+
+        displayResponse(result, result.success);
+      } catch (error) {
+        displayResponse(error, false);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
     document.getElementById('checkForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -519,48 +1049,128 @@
       btn.innerHTML = '<span class="loading"></span>Checking...';
       btn.disabled = true;
 
-      const merchantId = document.getElementById('merchantId').value;
-      const apiKey = document.getElementById('apiKey').value;
-
-      if (!merchantId || !apiKey) {
-        alert('Please enter Merchant ID and API Key first');
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        return;
-      }
-
-      const subscriber = document.getElementById('subscriberAddress').value;
-      const planId = document.getElementById('checkPlanId').value;
-      
-      let url = `https://caspay.link/api/v1/subscriptions/check/?merchant_id=${merchantId}&subscriber=${subscriber}`;
-      if (planId) {
-        url += `&plan_id=${planId}`;
-      }
-
       try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'X-CasPay-Key': apiKey
-          }
+        const sdk = initCasPay();
+        if (!sdk) {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        const subscriber = document.getElementById('subscriberAddress').value;
+        const planId = document.getElementById('checkPlanId').value;
+
+        if (!subscriber) {
+          alert('Please enter subscriber address');
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          return;
+        }
+
+        const result = await sdk.subscriptions.checkStatus({
+          subscriberAddress: subscriber,
+          planId: planId || undefined
         });
 
-        const data = await response.json();
-        displayResponse(data, response.ok);
+        displayResponse(result, result.success);
       } catch (error) {
-        displayResponse({ error: error.message }, false);
+        displayResponse({ error: error.message || error.error || 'Check failed' }, false);
       } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
       }
     });
 
-    // Display Response
     function displayResponse(data, isSuccess) {
       const box = document.getElementById('responseBox');
       box.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
       box.className = `response-box ${isSuccess ? 'success' : 'error'}`;
+      
+      if (data.transactionHash !== undefined) {
+        showResultModal(data, isSuccess);
+      }
+    }
+
+    function showResultModal(result, isSuccess) {
+      const modal = document.getElementById('resultModal');
+      const icon = document.getElementById('modalIcon');
+      const title = document.getElementById('modalTitle');
+      const subtitle = document.getElementById('modalSubtitle');
+      const details = document.getElementById('modalDetails');
+      
+      if (isSuccess) {
+        icon.className = 'modal-icon success';
+        icon.innerHTML = '✓';
+        title.textContent = 'Payment Successful!';
+        subtitle.textContent = 'Your transaction has been submitted to the blockchain.';
+        
+        const explorerUrl = `https://testnet.cspr.live/deploy/${result.transactionHash}`;
+        const shortHash = result.transactionHash ? 
+          `${result.transactionHash.slice(0, 8)}...${result.transactionHash.slice(-8)}` : 'N/A';
+        
+        details.innerHTML = `
+          <div class="modal-details-row">
+            <span class="modal-details-label">Status</span>
+            <span class="modal-details-value" style="color: rgb(34, 197, 94);">Confirmed</span>
+          </div>
+          <div class="modal-details-row">
+            <span class="modal-details-label">Transaction Hash</span>
+            <span class="modal-details-value">
+              <a href="${explorerUrl}" target="_blank">${shortHash}</a>
+            </span>
+          </div>
+          <div class="modal-details-row">
+            <span class="modal-details-label">Network</span>
+            <span class="modal-details-value">Casper Testnet</span>
+          </div>
+        `;
+      } else {
+        icon.className = 'modal-icon error';
+        icon.innerHTML = '✕';
+        title.textContent = 'Payment Failed';
+        subtitle.textContent = result.error || 'An error occurred during the transaction.';
+        
+        details.innerHTML = `
+          <div class="modal-details-row">
+            <span class="modal-details-label">Status</span>
+            <span class="modal-details-value" style="color: rgb(255, 86, 48);">Failed</span>
+          </div>
+          <div class="modal-details-row">
+            <span class="modal-details-label">Error</span>
+            <span class="modal-details-value">${result.error || 'Unknown error'}</span>
+          </div>
+        `;
+      }
+      
+      modal.classList.add('active');
+    }
+
+    function closeResultModal() {
+      document.getElementById('resultModal').classList.remove('active');
+    }
+
+    document.getElementById('resultModal').addEventListener('click', (e) => {
+      if (e.target.id === 'resultModal') {
+        closeResultModal();
+      }
+    });
+
+    if (typeof window !== 'undefined' && window.CasperWalletProvider) {
+      window.addEventListener('casper-wallet:disconnected', () => {
+        updateWalletStatus(false, null);
+      });
     }
   </script>
+
+  <!-- Result Modal -->
+  <div class="modal-overlay" id="resultModal">
+    <div class="modal">
+      <div class="modal-icon" id="modalIcon"></div>
+      <h2 class="modal-title" id="modalTitle">Payment Status</h2>
+      <p class="modal-subtitle" id="modalSubtitle">Transaction details</p>
+      <div class="modal-details" id="modalDetails"></div>
+      <button class="modal-btn modal-btn-primary" onclick="closeResultModal()">Close</button>
+    </div>
+  </div>
 </body>
 </html>
