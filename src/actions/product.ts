@@ -56,6 +56,8 @@ export async function createProduct(input: ProductCreateInput): Promise<Product>
     track_inventory: input.track_inventory ?? false,
     metadata: input.metadata || null,
     active: input.active ?? true,
+    accept_payment: input.accept_payment ?? false,
+    payment_wallet_address: input.payment_wallet_address || null,
   };
 
   const { data, error } = await supabase
@@ -127,6 +129,8 @@ export async function updateProduct(
   if (input.track_inventory !== undefined) updateData.track_inventory = input.track_inventory;
   if (input.metadata !== undefined) updateData.metadata = input.metadata;
   if (input.active !== undefined) updateData.active = input.active;
+  if (input.accept_payment !== undefined) updateData.accept_payment = input.accept_payment;
+  if (input.payment_wallet_address !== undefined) updateData.payment_wallet_address = input.payment_wallet_address;
 
   const { data, error } = await supabase
     .from('products')

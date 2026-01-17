@@ -9,6 +9,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
+import Alert from '@mui/material/Alert';
+import Dialog from '@mui/material/Dialog';
 import Switch from '@mui/material/Switch';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
@@ -18,12 +20,15 @@ import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
 import InputAdornment from '@mui/material/InputAdornment';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 
+import { useAuthContext } from 'src/auth/hooks';
 import { useProductMutations } from 'src/hooks/use-products';
 
 import { toast } from 'src/components/snackbar';
@@ -83,6 +88,10 @@ export const ProductFormSchema = z.object({
   track_inventory: z.boolean().optional(),
   active: z.boolean().optional(),
   metadata: z.record(z.string(), z.any()).optional(),
+  
+  // Payment acceptance fields
+  accept_payment: z.boolean().optional(),
+  payment_wallet_address: z.string().optional(),
 });
 
 // ----------------------------------------------------------------------
@@ -94,10 +103,13 @@ type Props = {
 
 export function ProductCreateEditForm({ merchantId, currentProduct }: Props) {
   const router = useRouter();
+  const { user } = useAuthContext();
   const { createProduct, updateProduct, isCreating, isUpdating } = useProductMutations(merchantId);
 
   const openDetails = useBoolean(true);
   const openPricing = useBoolean(true);
+  const openPayment = useBoolean(true);
+  const openPaymentInfo = useBoolean(false);
   const openInventory = useBoolean(false); // Collapsed by default
 
   const [customTokenAddress, setCustomTokenAddress] = useState('');
@@ -117,6 +129,10 @@ export function ProductCreateEditForm({ merchantId, currentProduct }: Props) {
     track_inventory: currentProduct?.track_inventory ?? false,
     active: currentProduct?.active ?? true,
     metadata: currentProduct?.metadata || {},
+    
+    // Payment acceptance fields (default to user's wallet if accepting payment)
+    accept_payment: currentProduct?.accept_payment ?? false,
+    payment_wallet_address: currentProduct?.payment_wallet_address || user?.publicKey || '',
   };
 
   const methods = useForm({
@@ -150,6 +166,8 @@ export function ProductCreateEditForm({ merchantId, currentProduct }: Props) {
           track_inventory: data.track_inventory,
           active: data.active,
           metadata: data.metadata,
+          accept_payment: data.accept_payment,
+          payment_wallet_address: data.accept_payment ? data.payment_wallet_address : undefined,
         });
         toast.success('Product updated successfully!');
       } else {
@@ -167,6 +185,8 @@ export function ProductCreateEditForm({ merchantId, currentProduct }: Props) {
           track_inventory: data.track_inventory,
           active: data.active,
           metadata: data.metadata,
+          accept_payment: data.accept_payment,
+          payment_wallet_address: data.accept_payment ? data.payment_wallet_address : undefined,
         });
         toast.success('Product created successfully!');
         reset();
@@ -484,6 +504,274 @@ export function ProductCreateEditForm({ merchantId, currentProduct }: Props) {
     </Card>
   );
 
+  const renderPaymentAcceptance = () => (
+    <>
+      <Card>
+        <CardHeader
+          title="Payment Acceptance"
+          subheader="Accept payments directly to your wallet"
+          action={renderCollapseButton(openPayment.value, openPayment.onToggle)}
+          sx={{ mb: 3 }}
+        />
+
+        <Collapse in={openPayment.value}>
+          <Divider />
+
+          <Stack spacing={3} sx={{ p: 3 }}>
+            <Alert severity="info">
+              By default, CasPay tracks payments and writes them to blockchain. 
+              Enable this option if you want to receive payments directly to your wallet.{' '}
+              <Box
+                component="span"
+                onClick={openPaymentInfo.onTrue}
+                sx={{
+                  color: 'info.main',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  '&:hover': {
+                    color: 'info.dark',
+                  },
+                }}
+              >
+                Click for details
+              </Box>
+            </Alert>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={values.accept_payment}
+                  onChange={(e) => {
+                    setValue('accept_payment', e.target.checked);
+                    if (e.target.checked && !values.payment_wallet_address) {
+                      setValue('payment_wallet_address', user?.publicKey || '');
+                    }
+                  }}
+                />
+              }
+              label="Accept Payments Directly"
+            />
+
+            {values.accept_payment && (
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2">
+                  Payment Wallet Address
+                </Typography>
+                <TextField
+                  value={values.payment_wallet_address}
+                  disabled
+                  fullWidth
+                  helperText="Connected wallet address (currently non-editable)"
+                  slotProps={{
+                    input: {
+                      sx: { 
+                        fontFamily: 'monospace', 
+                        fontSize: '0.875rem',
+                        bgcolor: 'action.hover',
+                      },
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Iconify icon="solar:wallet-bold" width={20} />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              </Stack>
+            )}
+          </Stack>
+        </Collapse>
+      </Card>
+
+      {/* Payment Info Dialog */}
+      <Dialog
+        open={openPaymentInfo.value}
+        onClose={openPaymentInfo.onFalse}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="h6">Payment Integration Options</Typography>
+            <IconButton onClick={openPaymentInfo.onFalse} size="small">
+              <Iconify icon="mingcute:close-line" />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+
+        <DialogContent>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 3,
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            }}
+          >
+            {/* Tracking Only */}
+            <Card
+              variant="outlined"
+              sx={{
+                p: 3,
+                height: '100%',
+              }}
+            >
+              <Stack spacing={2.5} height="100%">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 1.5,
+                      bgcolor: 'background.neutral',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Iconify icon="solar:document-text-bold-duotone" width={28} sx={{ color: 'text.secondary' }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6">Payment Tracking</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                      Track & Manage
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ borderStyle: 'dashed' }} />
+
+                <Stack spacing={1.5} sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'success.main', flexShrink: 0, mt: 0.25 }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Payment notification via SDK integration
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'success.main', flexShrink: 0, mt: 0.25 }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Transaction recorded on blockchain
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'success.main', flexShrink: 0, mt: 0.25 }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Invoicing and financial management
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'success.main', flexShrink: 0, mt: 0.25 }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Analytics and reporting tools
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    bgcolor: 'background.neutral',
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                    💡 Best for: Businesses handling payments externally but want blockchain tracking and analytics
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+
+            {/* Direct Payment */}
+            <Card
+              variant="outlined"
+              sx={{
+                p: 3,
+                height: '100%',
+              }}
+            >
+              <Stack spacing={2.5} height="100%">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 1.5,
+                      bgcolor: 'background.neutral',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Iconify icon="solar:wallet-money-bold-duotone" width={28} sx={{ color: 'text.secondary' }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6">Direct Payment</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                      Receive & Manage
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ borderStyle: 'dashed' }} />
+
+                <Stack spacing={1.5} sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'success.main', flexShrink: 0, mt: 0.25 }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Crypto payments to your connected wallet
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'success.main', flexShrink: 0, mt: 0.25 }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Transaction recorded on blockchain
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'success.main', flexShrink: 0, mt: 0.25 }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Invoicing and financial management
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Iconify icon="eva:checkmark-fill" width={20} sx={{ color: 'success.main', flexShrink: 0, mt: 0.25 }} />
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Analytics and reporting tools
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    bgcolor: 'background.neutral',
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                    💡 Best for: Businesses ready to accept crypto payments directly through CasPay
+                  </Typography>
+                </Box>
+              </Stack>
+            </Card>
+          </Box>
+
+          <Stack direction="row" spacing={2} sx={{ mt: 3, pb: 2 }}>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={openPaymentInfo.onFalse}
+              fullWidth
+            >
+              Close
+            </Button>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+
   const renderActions = () => (
     <Box
       sx={{
@@ -529,6 +817,7 @@ export function ProductCreateEditForm({ merchantId, currentProduct }: Props) {
       <Stack spacing={{ xs: 3, md: 5 }}>
         {renderDetails()}
         {renderPricing()}
+        {renderPaymentAcceptance()}
         {renderInventory()}
         {renderActions()}
       </Stack>

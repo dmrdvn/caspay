@@ -54,7 +54,6 @@ export function MerchantCreateEditForm({ currentMerchant }: Props) {
 
   const openBasic = useBoolean(true);
   const openBranding = useBoolean(true);
-  const openIntegration = useBoolean(true); // Only shown on create
 
   const defaultValues: MerchantFormSchema = {
     store_name: currentMerchant?.store_name || '',
@@ -156,15 +155,23 @@ export function MerchantCreateEditForm({ currentMerchant }: Props) {
             </Field.Select>
           </Stack>
 
-          <Stack spacing={1.5}>
-            <Typography variant="subtitle2">Support Email</Typography>
-            <Field.Text name="support_email" placeholder="support@example.com" type="email" />
-          </Stack>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            }}
+          >
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2">Support Email</Typography>
+              <Field.Text name="support_email" placeholder="support@example.com" type="email" />
+            </Stack>
 
-          <Stack spacing={1.5}>
-            <Typography variant="subtitle2">Support URL</Typography>
-            <Field.Text name="support_url" placeholder="https://example.com/support" />
-          </Stack>
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2">Support URL</Typography>
+              <Field.Text name="support_url" placeholder="https://example.com/support" />
+            </Stack>
+          </Box>
         </Stack>
       </Collapse>
     </Card>
@@ -183,37 +190,32 @@ export function MerchantCreateEditForm({ currentMerchant }: Props) {
         <Divider />
 
         <Stack spacing={3} sx={{ p: 3 }}>
-          <Stack spacing={1.5}>
-            <Typography variant="subtitle2">Logo URL</Typography>
-            <Field.Text name="logo_url" placeholder="https://example.com/logo.png" />
-          </Stack>
+          <Box
+            sx={{
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            }}
+          >
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2">Logo URL</Typography>
+              <Field.Text name="logo_url" placeholder="https://example.com/logo.png" />
+            </Stack>
 
-          <Stack spacing={1.5}>
-            <Typography variant="subtitle2">Brand Color</Typography>
-            <Field.Text name="brand_color" placeholder="#1890FF" />
-          </Stack>
-        </Stack>
-      </Collapse>
-    </Card>
-  );
-
-  const renderIntegration = () => (
-    <Card>
-      <CardHeader
-        title="Integration"
-        subheader="API keys and webhooks will be available after creation"
-        action={renderCollapseButton(openIntegration.value, openIntegration.onToggle)}
-        sx={{ mb: 3 }}
-      />
-
-      <Collapse in={openIntegration.value}>
-        <Divider />
-
-        <Stack spacing={3} sx={{ p: 3 }}>
-          <Alert severity="info">
-            API keys and webhook endpoints can be managed from the Integration page after your merchant is created.
-            You&apos;ll find the &quot;API Integration&quot; button in your merchant dashboard.
-          </Alert>
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2">Brand Color</Typography>
+              <Field.Text 
+                name="brand_color" 
+                placeholder="#1890FF"
+                type="color"
+                slotProps={{
+                  input: {
+                    sx: { height: 56, cursor: 'pointer' }
+                  }
+                }}
+              />
+            </Stack>
+          </Box>
         </Stack>
       </Collapse>
     </Card>
@@ -241,7 +243,6 @@ export function MerchantCreateEditForm({ currentMerchant }: Props) {
       <Stack spacing={{ xs: 3, md: 5 }}>
         {renderBasicInfo()}
         {renderBranding()}
-        {!currentMerchant && renderIntegration()}
         {renderActions()}
       </Stack>
     </Form>

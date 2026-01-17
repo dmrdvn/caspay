@@ -60,28 +60,37 @@ export async function getTopPerformingItems(
     const productIds = (topProducts || []).map((p) => p.id);
     const planIds = (topPlans || []).map((p) => p.id);
 
-    const { data: productPayments, error: productPaymentsError } = await supabase
-      .from('payments')
-      .select('product_id, usd_value')
-      .eq('merchant_id', merchantId)
-      .eq('payment_type', 'product')
-      .eq('status', 'confirmed')
-      .in('product_id', productIds.length > 0 ? productIds : ['none']);
+    // Only query payments if we have products/plans
+    let productPayments: Array<{ product_id: string; usd_value: number | null }> = [];
+    if (productIds.length > 0) {
+      const { data, error: productPaymentsError } = await supabase
+        .from('payments')
+        .select('product_id, usd_value')
+        .eq('merchant_id', merchantId)
+        .eq('payment_type', 'product')
+        .eq('status', 'confirmed')
+        .in('product_id', productIds);
 
-    if (productPaymentsError) throw productPaymentsError;
+      if (productPaymentsError) throw productPaymentsError;
+      productPayments = data || [];
+    }
 
-    const { data: subPayments, error: subPaymentsError } = await supabase
-      .from('payments')
-      .select('subscription_plan_id, usd_value')
-      .eq('merchant_id', merchantId)
-      .eq('payment_type', 'subscription')
-      .eq('status', 'confirmed')
-      .in('subscription_plan_id', planIds.length > 0 ? planIds : ['none']);
+    let subPayments: Array<{ subscription_plan_id: string; usd_value: number | null }> = [];
+    if (planIds.length > 0) {
+      const { data, error: subPaymentsError } = await supabase
+        .from('payments')
+        .select('subscription_plan_id, usd_value')
+        .eq('merchant_id', merchantId)
+        .eq('payment_type', 'subscription')
+        .eq('status', 'confirmed')
+        .in('subscription_plan_id', planIds);
 
-    if (subPaymentsError) throw subPaymentsError;
+      if (subPaymentsError) throw subPaymentsError;
+      subPayments = data || [];
+    }
 
     const productStats = new Map<string, { count: number; revenue: number }>();
-    (productPayments || []).forEach((p) => {
+    productPayments.forEach((p) => {
       const current = productStats.get(p.product_id) || { count: 0, revenue: 0 };
       productStats.set(p.product_id, {
         count: current.count + 1,
@@ -90,7 +99,7 @@ export async function getTopPerformingItems(
     });
 
     const planStats = new Map<string, { count: number; revenue: number }>();
-    (subPayments || []).forEach((p) => {
+    subPayments.forEach((p) => {
       const current = planStats.get(p.subscription_plan_id) || { count: 0, revenue: 0 };
       planStats.set(p.subscription_plan_id, {
         count: current.count + 1,

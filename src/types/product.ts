@@ -27,6 +27,11 @@ export type Product = {
   track_inventory: boolean; 
   metadata?: Record<string, any> | null; 
   active: boolean; 
+  
+  // Payment acceptance fields
+  accept_payment?: boolean; // If true, merchant accepts payment directly
+  payment_wallet_address?: string | null; // Wallet to receive payments
+  
   transaction_hash?: string | null; 
   created_at: string; 
   updated_at: string; 
@@ -47,6 +52,10 @@ export type ProductCreateInput = {
   track_inventory?: boolean;
   metadata?: Record<string, any>;
   active?: boolean;
+  
+  // Payment acceptance fields
+  accept_payment?: boolean;
+  payment_wallet_address?: string;
 };
 
 export type ProductUpdateInput = Partial<ProductCreateInput>;
