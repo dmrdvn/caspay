@@ -1,17 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
-
-const RPC_URLS = {
-  mainnet: {
-    primary: 'https://node.cspr.cloud/rpc',
-    fallback: ['https://rpc.mainnet.casperlabs.io/rpc'],
-  },
-  testnet: {
-    primary: 'https://node.testnet.cspr.cloud/rpc',
-    fallback: ['https://rpc.testnet.casperlabs.io/rpc'],
-  },
+const CASPER_RPC_URLS = {
+  mainnet: 'https://rpc.mainnet.casperlabs.io/rpc',
+  testnet: 'https://rpc.testnet.casperlabs.io/rpc',
 };
 
 export async function POST(request: NextRequest) {
@@ -26,64 +18,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const rpcConfig = network === 'mainnet' ? RPC_URLS.mainnet : RPC_URLS.testnet;
-    const allUrls = [rpcConfig.primary, ...rpcConfig.fallback];
-    
-    let lastError: string = '';
-    
-    for (const rpcUrl of allUrls) {
-      try {
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        if (rpcUrl.includes('cspr.cloud') && CSPR_CLOUD_API_KEY) {
-          headers['Authorization'] = CSPR_CLOUD_API_KEY;
-        }
-        
-        const response = await fetch(rpcUrl, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: Date.now(),
-            method: 'account_put_deploy',
-            params: {
-              deploy,
-            },
-          }),
-        });
+    const rpcUrl = network === 'mainnet' 
+      ? CASPER_RPC_URLS.mainnet 
+      : CASPER_RPC_URLS.testnet;
 
-        if (!response.ok) {
-          lastError = `HTTP ${response.status}`;
-          continue;
-        }
+    const rpcPayload = {
+      jsonrpc: '2.0',
+      method: 'account_put_deploy',
+      params: [deploy],
+      id: Date.now(),
+    };
 
-        const result = await response.json();
+    const response = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(rpcPayload),
+    });
 
-        if (result.error) {
-          lastError = result.error.message || 'RPC error';
-          continue;
-        }
+    const result = await response.json();
 
-        return NextResponse.json({
-          success: true,
-          deploy_hash: result.result.deploy_hash,
-        });
-      } catch (e: any) {
-        lastError = e.message || 'Unknown error';
-        continue;
-      }
+    if (result.error) {
+      return NextResponse.json(
+        { error: result.error.message || 'RPC error' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json(
-      { error: `All RPC nodes failed: ${lastError}` },
-      { status: 502 }
-    );
+    return NextResponse.json({
+      success: true,
+      deploy_hash: result.result?.deploy_hash || result.result,
+    });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }
+}
+
+export async function OPTIONS() {
+  return NextResponse.json({}, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
 }
