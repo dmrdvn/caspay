@@ -415,13 +415,13 @@ export async function POST(req: NextRequest) {
       paymentRecord = payment;
 
       try {
-        const paymentDeployHash = await recordPayment(
+        await recordPayment(
           verification.sender,
           null,
           plan.plan_id
         );
         if (!existingSubscription || existingSubscription.status !== 'active') {
-          const subscriptionDeployHash = await createSubscription(
+          await createSubscription(
             subscriptionId,
             merchant.merchant_id,
             verification.sender,
@@ -429,6 +429,7 @@ export async function POST(req: NextRequest) {
           );
         }
       } catch (contractError: any) {
+        console.error('Contract recording failed:', contractError);
       }
 
       // Trigger webhook
@@ -503,12 +504,13 @@ export async function POST(req: NextRequest) {
       paymentRecord = payment;
 
       try {
-        const deployHash = await recordPayment(
+        await recordPayment(
           verification.sender,
           product.product_id,
           null
         );
       } catch (contractError: any) {
+        console.error('Contract recording failed:', contractError);
       }
 
       // Trigger webhook

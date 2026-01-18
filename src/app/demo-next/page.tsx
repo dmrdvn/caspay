@@ -23,7 +23,6 @@ import Toolbar from '@mui/material/Toolbar';
 
 import { paths } from 'src/routes/paths';
 
-import { useSettingsContext } from 'src/components/settings';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { Form as FormProvider, RHFTextField } from 'src/components/hook-form';
 
@@ -34,7 +33,6 @@ declare global {
 }
 
 export default function DemoNext() {
-    const settings = useSettingsContext();
     const [sdkReady, setSdkReady] = useState(false);
     const [apiResponse, setApiResponse] = useState<any>(null);
     const [responseStatus, setResponseStatus] = useState<'success' | 'error' | null>(null);
@@ -139,9 +137,9 @@ export default function DemoNext() {
     };
 
     const initCasPay = () => {
-        const { merchantId, apiKey, walletAddress } = credentialsMethods.getValues();
+        const { merchantId, apiKey, walletAddress: merchantWalletAddress } = credentialsMethods.getValues();
 
-        if (!merchantId || !apiKey || !walletAddress) {
+        if (!merchantId || !apiKey || !merchantWalletAddress) {
             toast.error('Please enter Merchant ID, API Key, and Wallet Address first');
             return null;
         }
@@ -156,7 +154,7 @@ export default function DemoNext() {
         return new window.CasPay({
             apiKey,
             merchantId,
-            walletAddress,
+            walletAddress: merchantWalletAddress,
             network: 'testnet',
             baseUrl
         });
@@ -190,7 +188,7 @@ export default function DemoNext() {
             let senderAddress;
             try {
                 senderAddress = await caspay.wallet.getAddress();
-            } catch (err) {
+            } catch {
                 senderAddress = '0145ab3c7d9e8f2a1b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c';
             }
 
@@ -235,7 +233,7 @@ export default function DemoNext() {
             let senderAddress;
             try {
                 senderAddress = await caspay.wallet.getAddress();
-            } catch (err) {
+            } catch {
                 senderAddress = '0145ab3c7d9e8f2a1b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c';
             }
 

@@ -90,7 +90,7 @@ async function getPrivateKey(): Promise<PrivateKey> {
     try {
       const pemKey = PRIVATE_KEY_BASE64!.replace(/\\n/g, '\n');
       privateKeyInstance = PrivateKey.fromPem(pemKey, KeyAlgorithm.ED25519);
-    } catch (error) {
+    } catch {
       throw new Error('Failed to initialize private key');
     }
   }
