@@ -2,9 +2,11 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 const CASPER_RPC_URLS = {
-  mainnet: 'https://rpc.mainnet.casperlabs.io/rpc',
-  testnet: 'https://rpc.testnet.casperlabs.io/rpc',
+  mainnet: process.env.NEXT_PUBLIC_RPC_URL_MAINNET || 'https://node.mainnet.cspr.cloud/rpc',
+  testnet: process.env.NEXT_PUBLIC_RPC_URL || 'https://node.testnet.cspr.cloud/rpc',
 };
+
+const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +31,15 @@ export async function POST(request: NextRequest) {
       ? CASPER_RPC_URLS.mainnet 
       : CASPER_RPC_URLS.testnet;
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add API key if available (for cspr.cloud)
+    if (CSPR_CLOUD_API_KEY) {
+      headers['Authorization'] = `Bearer ${CSPR_CLOUD_API_KEY}`;
+    }
+
     const rpcPayload = {
       jsonrpc: '2.0',
       method: 'account_put_deploy',
@@ -38,9 +49,7 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(rpcUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(rpcPayload),
     });
 
