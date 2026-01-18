@@ -20,7 +20,7 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, X-CasPay-Key"
+          "value": "Content-Type, X-CasPay-Key, X-CasPay-SDK-Version, User-Agent"
         }
       ]
     }
