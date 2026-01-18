@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Add API key if available (for cspr.cloud)
     if (CSPR_CLOUD_API_KEY) {
-      headers['Authorization'] = `Bearer ${CSPR_CLOUD_API_KEY}`;
+      headers['Authorization'] = CSPR_CLOUD_API_KEY;
     }
 
     const rpcPayload = {
