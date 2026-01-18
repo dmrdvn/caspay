@@ -18,7 +18,7 @@ const isStaticExport = false;
 // ----------------------------------------------------------------------
 
 const nextConfig: NextConfig = {
-  trailingSlash: true,
+  trailingSlash: false,
   output: isStaticExport ? 'export' : undefined,
   env: {
     BUILD_STATIC_EXPORT: JSON.stringify(isStaticExport),
