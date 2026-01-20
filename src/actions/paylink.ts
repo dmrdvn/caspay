@@ -10,17 +10,27 @@ import type {
   CreatePayLinkResponse,
 } from 'src/types/paylink';
 
+function generateShortId(length: number = 6): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 async function generateSlug(productName: string): Promise<string> {
   const baseSlug = productName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
-    .slice(0, 50);
+    .slice(0, 40);
   
-  let slug = baseSlug;
-  let counter = 1;
+  let slug = `${baseSlug}-${generateShortId()}`;
+  let attempts = 0;
+  const maxAttempts = 10;
   
-  while (true) {
+  while (attempts < maxAttempts) {
     const { data } = await supabase
       .from('paylinks')
       .select('id')
@@ -29,8 +39,12 @@ async function generateSlug(productName: string): Promise<string> {
     
     if (!data) break;
     
-    slug = `${baseSlug}-${counter}`;
-    counter++;
+    slug = `${baseSlug}-${generateShortId()}`;
+    attempts++;
+  }
+  
+  if (attempts >= maxAttempts) {
+    slug = `${baseSlug}-${Date.now().toString(36)}`;
   }
   
   return slug;
