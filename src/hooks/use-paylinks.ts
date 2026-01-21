@@ -18,6 +18,7 @@ import {
   deletePayLink as deletePayLinkAction,
   getPayLinks as getPayLinksAction,
   getPayLink as getPayLinkAction,
+  getPayLinkStats,
 } from 'src/actions/paylink';
 
 import { useAuthContext } from 'src/auth/hooks';
@@ -35,7 +36,26 @@ async function fetchPayLinks(merchantId: string | undefined): Promise<PayLinkWit
   if (!merchantId) return [];
 
   try {
-    return await getPayLinksAction(merchantId);
+    const paylinks = await getPayLinksAction(merchantId);
+    
+    const paylinksWithStats = await Promise.all(
+      paylinks.map(async (paylink) => {
+        try {
+          const stats = await getPayLinkStats(paylink.id, merchantId);
+          return {
+            ...paylink,
+            total_revenue: stats?.total_revenue || 0,
+          };
+        } catch {
+          return {
+            ...paylink,
+            total_revenue: 0,
+          };
+        }
+      })
+    );
+    
+    return paylinksWithStats;
   } catch (error) {
     console.error('[fetchPayLinks] Error:', error);
     throw error;

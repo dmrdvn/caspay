@@ -9,11 +9,8 @@ import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import DialogContent from '@mui/material/DialogContent';
 
 import { fCurrency } from 'src/utils/format-number';
 
@@ -23,6 +20,8 @@ import { usePaymentMutations } from 'src/hooks/use-payment';
 
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
+
+import { PaymentDialog } from './payment-dialog';
 
 type Props = {
   paylink: PayLinkWithProduct | null;
@@ -56,7 +55,6 @@ export function PaymentView({ paylink }: Props) {
   const [totalReceived, setTotalReceived] = useState(0);
   const [transactionHash, setTransactionHash] = useState<string>('');
 
-  // Cleanup polling on unmount
   useEffect(
     () => () => {
       if (pollingInterval) {
@@ -66,7 +64,6 @@ export function PaymentView({ paylink }: Props) {
     [pollingInterval]
   );
 
-  // Countdown timer for payment expiration
   useEffect(() => {
     if (paymentStatus === 'waiting' && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -80,7 +77,6 @@ export function PaymentView({ paylink }: Props) {
     return undefined;
   }, [paymentStatus, countdown, pollingInterval, pendingPayment]);
 
-  // Redirect countdown after successful payment
   useEffect(() => {
     if (paymentStatus === 'success' && redirectCountdown > 0) {
       const timer = setTimeout(() => setRedirectCountdown(redirectCountdown - 1), 1000);
@@ -95,7 +91,6 @@ export function PaymentView({ paylink }: Props) {
   const pollForPayment = useCallback(
     async (paymentId: string) => {
       try {
-        console.log('[pollForPayment] Checking blockchain for payment:', paymentId);
         
         const { verifyPendingPayments } = await import('src/actions/payment');
         await verifyPendingPayments();
@@ -103,10 +98,8 @@ export function PaymentView({ paylink }: Props) {
         const { checkPaymentStatus } = await import('src/actions/payment');
         const result = await checkPaymentStatus(paymentId);
 
-        console.log('[pollForPayment] Status after verification:', result);
-
         if (result.status === 'confirmed') {
-          console.log('✅ Payment confirmed! Starting redirect countdown...');
+          console.log('Payment confirmed! Starting redirect countdown...');
           setPaymentStatus('success');
           setRedirectCountdown(10);
           setTransactionHash(result.transactionHash || '');
@@ -152,12 +145,10 @@ export function PaymentView({ paylink }: Props) {
             console.log('[Realtime] Payment update:', payload);
             
             if (payload.new.status === 'confirmed') {
-              console.log('✅ Payment confirmed via Realtime!');
               setPaymentStatus('success');
               setRedirectCountdown(10);
               setTransactionHash(payload.new.transaction_hash || '');
               
-              // Stop polling if active
               if (pollingInterval) {
                 clearInterval(pollingInterval);
                 setPollingInterval(null);
@@ -191,7 +182,6 @@ export function PaymentView({ paylink }: Props) {
       setPaymentStatus('waiting');
       setCountdown(600);
 
-      // Create pending payment via action
       const result = await createPendingPayment({
         paylinkId: paylink.id,
         merchantId: paylink.merchant_id,
@@ -440,333 +430,21 @@ export function PaymentView({ paylink }: Props) {
         </Stack>
       </Card>
 
-      {/* Payment Dialog - Optimized Design */}
-      <Dialog 
-        open={dialogOpen} 
-        onClose={handleCloseDialog} 
-        maxWidth="sm" 
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-          },
-        }}
-      >
-        <DialogContent sx={{ p: 4 }}>
-          <Stack spacing={3}>
-            {/* Header */}
-            <Stack spacing={0.5} alignItems="center">
-              <Typography variant="h5">
-                {paymentStatus === 'waiting' && 'Waiting for Payment'}
-                {paymentStatus === 'success' && 'Payment Confirmed!'}
-                {paymentStatus === 'failed' && 'Payment Timeout'}
-              </Typography>
-              {paymentStatus === 'waiting' && (
-                <Typography variant="caption" color="text.secondary">
-                  Time remaining: {Math.floor(countdown / 60)}m {String(countdown % 60).padStart(2, '0')}s
-                </Typography>
-              )}
-              {paymentStatus === 'partial' && (
-                <Alert severity="warning" sx={{ mt: 1, width: '100%' }}>
-                  <Typography variant="caption">
-                    Partial payment received: {totalReceived.toFixed(2)} / {paylink.product.price} CSPR
-                    <br />
-                    Please send remaining: {(paylink.product.price - totalReceived).toFixed(2)} CSPR
-                  </Typography>
-                </Alert>
-              )}
-              {paymentStatus === 'success' && (
-                <Typography variant="caption" color="success.main">
-                  Transaction verified on blockchain
-                </Typography>
-              )}
-              {/* Amount Badge */}
-              <Box
-                sx={{
-                  mt: 1,
-                  px: 2,
-                  py: 0.5,
-                  borderRadius: 1,
-                  bgcolor: 'primary.lighter',
-                  border: (theme) => `1px solid ${theme.palette.primary.main}`,
-                }}
-              >
-                <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                  {fCurrency(paylink.product.price)} {paylink.product.currency}
-                </Typography>
-              </Box>
-            </Stack>
-
-            {/* Status Animation - Always visible */}
-            <Box
-              sx={{
-                position: 'relative',
-                width: '100%',
-                height: 110,
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-            >
-              {/* Left: Customer */}
-              <Stack alignItems="center" spacing={1}>
-                <Box
-                  sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '50%',
-                    bgcolor: paymentStatus === 'success' ? 'success.lighter' : 'grey.100',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    animation: paymentStatus === 'waiting' || paymentStatus === 'partial' ? 'pulse 2s ease-in-out infinite' : 'none',
-                    '@keyframes pulse': {
-                      '0%, 100%': { transform: 'scale(1)', opacity: 0.8 },
-                      '50%': { transform: 'scale(1.05)', opacity: 1 },
-                    },
-                  }}
-                >
-                  <Iconify 
-                    icon={paymentStatus === 'success' ? 'solar:check-circle-bold' : 'solar:user-id-bold'} 
-                    width={32} 
-                    sx={{ color: paymentStatus === 'success' ? 'success.main' : 'grey.600' }} 
-                  />
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  You
-                </Typography>
-              </Stack>
-
-              {paymentStatus !== 'success' && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 32,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      bgcolor: 'primary.main',
-                      animation: paymentStatus === 'waiting' || paymentStatus === 'partial' ? 'moveRight 1.5s ease-in-out infinite' : 'none',
-                      '@keyframes moveRight': {
-                        '0%': { transform: 'translateX(-30px)', opacity: 0 },
-                        '50%': { opacity: 1 },
-                        '100%': { transform: 'translateX(30px)', opacity: 0 },
-                      },
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      bgcolor: 'primary.main',
-                      animation: paymentStatus === 'waiting' || paymentStatus === 'partial' ? 'moveRight 1.5s ease-in-out infinite 0.5s' : 'none',
-                    }}
-                  />
-                </Box>
-              )}
-              
-              <Stack alignItems="center" spacing={1}>
-                <Box
-                  sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '50%',
-                    bgcolor: paymentStatus === 'success' ? 'success.lighter' : 'grey.100',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    animation: paymentStatus === 'waiting' || paymentStatus === 'partial' ? 'pulse 2s ease-in-out infinite 0.5s' : 'none',
-                  }}
-                >
-                  <Iconify 
-                    icon={paymentStatus === 'success' ? 'solar:check-circle-bold' : 'solar:wallet-bold'} 
-                    width={32} 
-                    sx={{ color: paymentStatus === 'success' ? 'success.main' : 'grey.600' }} 
-                  />
-                </Box>
-                <Typography 
-                  variant="caption" 
-                  color="text.secondary" 
-                  sx={{ 
-                    fontWeight: 500,
-                    maxWidth: 100,
-                    textAlign: 'center',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {paylink.merchant.store_name}
-                </Typography>
-              </Stack>
-            </Box>
-          
-            <Divider />
-          
-            {/* Payment Details - Compact */}
-            <Stack spacing={2}>
-              {pendingPayment && paymentStatus !== 'success' && (
-                <Box>
-                  <Box
-                    sx={{
-                      p: 2,
-                      borderRadius: 1.5,
-                      bgcolor: 'primary.lighter',
-                      border: (theme) => `1px solid ${theme.palette.primary.main}`,
-                      textAlign: 'center',
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                      Transfer ID
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        fontFamily: 'monospace',
-                        letterSpacing: '0.2em',
-                        fontWeight: 700,
-                        color: 'primary.main',
-                      }}
-                    >
-                      {pendingPayment.unique_payment_id}
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
-          
-              {/* Wallet Address */}
-              <Box>
-                <Box
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 1,
-                    bgcolor: 'background.neutral',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                  }}
-                >
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mb: 0.5 }}>
-                      Recipient Address
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontFamily: 'monospace',
-                        wordBreak: 'break-all',
-                        fontSize: '0.7rem',
-                        color: 'text.secondary',
-                      }}
-                    >
-                      {paylink.wallet_address}
-                    </Typography>
-                  </Box>
-                  <Button
-                    size="small"
-                    sx={{ minWidth: 'auto', p: 0.5 }}
-                    onClick={handleCopyAddress}
-                  >
-                    <Iconify icon="solar:copy-bold" width={16} />
-                  </Button>
-                </Box>
-              </Box>
-
-              {/* Transaction Hash - Only show when success */}
-              {paymentStatus === 'success' && transactionHash && (
-                <Box>
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 1,
-                      bgcolor: 'success.lighter',
-                      border: (theme) => `1px solid ${theme.palette.success.main}`,
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                      Transaction Hash
-                    </Typography>
-                    <Box
-                      component="a"
-                      href={`https://testnet.cspr.live/deploy/${transactionHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        display: 'block',
-                        textDecoration: 'none',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          opacity: 0.8,
-                        },
-                      }}
-                    >
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontFamily: 'monospace',
-                          wordBreak: 'break-all',
-                          fontSize: '0.7rem',
-                          color: 'success.dark',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {transactionHash}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.5 }}>
-                      <Iconify icon="solar:link-bold" width={14} sx={{ color: 'success.main' }} />
-                      <Typography variant="caption" sx={{ color: 'success.main', fontSize: '0.65rem' }}>
-                        View on Casper Testnet Explorer
-                      </Typography>
-                    </Stack>
-                  </Box>
-                </Box>
-              )}
-          
-              {/* Instructions - Only show when waiting/partial */}
-              {paymentStatus !== 'success' && (
-                <Alert severity="info" sx={{ py: 1 }}>
-                  <Typography variant="caption">
-                    1. Open Casper Wallet → 2. Enter Transfer ID in memo → 3. Send exact amount
-                  </Typography>
-                </Alert>
-              )}
-            </Stack>
-          
-            {/* Action Button */}
-            {paymentStatus === 'success' ? (
-              <Button
-                fullWidth
-                variant="contained"
-                color="success"
-                onClick={handleCloseDialog}
-              >
-                Close
-              </Button>
-            ) : (
-              <Button
-                fullWidth
-                variant="outlined"
-                color="error"
-                onClick={handleCancelPayment}
-                disabled={paymentStatus === 'failed'}
-              >
-                Cancel Payment
-              </Button>
-            )}
-
-          </Stack>
-        </DialogContent>
-      </Dialog>
+      {paylink && (
+        <PaymentDialog
+          open={dialogOpen}
+          paylink={paylink}
+          paymentStatus={paymentStatus}
+          pendingPayment={pendingPayment}
+          countdown={countdown}
+          redirectCountdown={redirectCountdown}
+          totalReceived={totalReceived}
+          transactionHash={transactionHash}
+          onClose={handleCloseDialog}
+          onCancel={handleCancelPayment}
+          onCopyAddress={handleCopyAddress}
+        />
+      )}
     </Container>
   );
 }

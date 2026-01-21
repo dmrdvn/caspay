@@ -85,12 +85,12 @@ export async function createPayLink(
         merchant_id: merchant.id,
         slug,
         wallet_address: input.wallet_address || merchant.wallet_address,
-        fee_percentage: input.fee_percentage ?? 2.0,
+        fee_percentage: 0,
         payment_methods: input.payment_methods ?? ['wallet', 'fiat'],
-        expires_at: input.expires_at,
+        expires_at: input.expires_at || null,
         max_uses: input.max_uses,
         custom_message: input.custom_message,
-        custom_success_url: input.custom_success_url,
+        custom_success_url: input.custom_success_url || null,
         custom_button_text: input.custom_button_text ?? 'Pay Now',
         metadata: input.metadata,
       })
@@ -371,7 +371,7 @@ export async function getPayLinkStats(
 
     const { data: payments, error: paymentsError } = await supabase
       .from('payments')
-      .select('net_amount, payment_source, created_at')
+      .select('amount, payment_source, created_at')
       .eq('paylink_id', paylinkId)
       .eq('status', 'confirmed');
 
@@ -381,7 +381,7 @@ export async function getPayLinkStats(
 
     const totalViews = analytics?.filter((a: any) => a.event_type === 'view').length || 0;
     const totalPayments = payments?.length || 0;
-    const totalRevenue = payments?.reduce((sum: number, p: any) => sum + (Number(p.net_amount) || 0), 0) || 0;
+    const totalRevenue = payments?.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0) || 0;
     const conversionRate = totalViews > 0 ? (totalPayments / totalViews) * 100 : 0;
 
     const walletPayments =

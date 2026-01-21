@@ -14,7 +14,7 @@ import TableContainer from '@mui/material/TableContainer';
 
 import { paths } from 'src/routes/paths';
 
-import { usePayLinks } from 'src/hooks/use-paylinks';
+import { usePayLinks, usePayLinkMutations } from 'src/hooks/use-paylinks';
 import { useMerchants } from 'src/hooks';
 
 import { Iconify } from 'src/components/iconify';
@@ -32,14 +32,14 @@ import { PayLinkTableRow } from 'src/sections/paylink/paylink-table-row';
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'product_name', label: 'Product' },
-  { id: 'slug', label: 'Link' },
-  { id: 'status', label: 'Status', width: 100 },
-  { id: 'usage', label: 'Uses', width: 100 },
-  { id: 'revenue', label: 'Total Paid', width: 120 },
-  { id: 'usage_limit', label: 'Usage', width: 120 },
-  { id: 'created_at', label: 'Created', width: 140 },
-  { id: 'actions', label: 'Actions', width: 88 },
+  { id: 'product_name', label: 'Product', width: 180 },
+  { id: 'slug', label: 'Link', width: 50 },
+  { id: 'status', label: 'Status', width: 30 },
+  { id: 'fulfillment', label: 'Type', width: 50 },
+  { id: 'usage', label: 'Usage', width: 30 },
+  { id: 'revenue', label: 'Total Paid', width: 100 },
+  { id: 'created_at', label: 'Created', width: 50 },
+  { id: 'actions', label: 'Actions', width: 48 },
 ];
 
 // ----------------------------------------------------------------------
@@ -50,7 +50,8 @@ export function PayLinkListView() {
   const { currentMerchant } = useMerchants();
   const merchantId = currentMerchant?.id;
   
-  const { paylinks, isLoading } = usePayLinks(merchantId);
+  const { paylinks, isLoading, refetch } = usePayLinks(merchantId);
+  const { deletePayLink } = usePayLinkMutations(merchantId);
 
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
@@ -74,6 +75,16 @@ export function PayLinkListView() {
     },
     [paylinks]
   );
+
+  const handleDeleteSelected = useCallback(async () => {
+    try {
+      await Promise.all(selectedRows.map((id) => deletePayLink(id)));
+      setSelectedRows([]);
+      await refetch();
+    } catch (error) {
+      console.error('Error deleting PayLinks:', error);
+    }
+  }, [selectedRows, deletePayLink, refetch]);
 
   const notFound = !isLoading && !paylinks.length;
 
@@ -129,6 +140,7 @@ export function PayLinkListView() {
                   color="error"
                   variant="contained"
                   startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
+                  onClick={handleDeleteSelected}
                 >
                   Delete
                 </Button>
@@ -157,6 +169,7 @@ export function PayLinkListView() {
                     row={paylink}
                     selected={selectedRows.includes(paylink.id)}
                     onSelectRow={() => handleSelectRow(paylink.id)}
+                    onDeleteSuccess={refetch}
                   />
                 ))}
 

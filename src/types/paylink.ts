@@ -4,27 +4,22 @@ export interface PayLink {
   product_id: string;
   merchant_id: string;
 
-  // PayLink Properties
   slug: string;
   qr_code_url: string | null;
 
-  // Payment Settings
   wallet_address: string;
   fee_percentage: number;
   payment_methods: ('wallet' | 'fiat')[];
 
-  // Limits
   is_active: boolean;
   expires_at: string | null;
   max_uses: number | null;
   current_uses: number;
 
-  // Customization
   custom_message: string | null;
   custom_success_url: string | null;
   custom_button_text: string;
 
-  // Metadata
   metadata: Record<string, any> | null;
 
   created_at: string;
@@ -74,6 +69,7 @@ export interface PayLinkWithProduct extends PayLink {
     logo_url: string | null;
     brand_color: string | null;
   };
+  total_revenue?: number;
 }
 
 export interface PayLinkAnalyticsEvent {
@@ -109,4 +105,80 @@ export interface CreatePayLinkResponse {
   paylink: PayLink;
   public_url: string;
   qr_code_url: string;
+}
+
+export type FulfillmentType =
+  | 'none'
+  | 'digital_download'
+  | 'license_key'
+  | 'service_access'
+  | 'donation'
+  | 'coupon_voucher'
+  | 'event_ticket'
+  | 'content_access'
+  | 'custom_message';
+
+export interface DigitalDownloadFulfillment {
+  url: string;
+  file_name?: string;
+  expires_hours?: number;
+}
+
+export interface LicenseKeyFulfillment {
+  key: string;
+  instructions?: string;
+}
+
+export interface ServiceAccessFulfillment {
+  access_url: string;
+  username?: string;
+  instructions?: string;
+}
+
+export interface DonationFulfillment {
+  campaign_name?: string;
+  thank_you_note?: string;
+}
+
+export interface CouponVoucherFulfillment {
+  coupon_code: string;
+  discount_info?: string;
+  expires_at?: string;
+}
+
+export interface EventTicketFulfillment {
+  event_name: string;
+  event_date: string;
+  ticket_code: string;
+  venue?: string;
+  additional_info?: string;
+}
+
+export interface ContentAccessFulfillment {
+  content_url: string;
+  access_duration_days?: number;
+  instructions?: string;
+}
+
+export interface CustomMessageFulfillment {
+  title: string;
+  message: string;
+}
+
+export interface FulfillmentMetadata {
+  fulfillment_type: FulfillmentType;
+  redirect_delay?: number;
+  digital_download?: DigitalDownloadFulfillment;
+  license_key?: LicenseKeyFulfillment;
+  service_access?: ServiceAccessFulfillment;
+  donation?: DonationFulfillment;
+  coupon_voucher?: CouponVoucherFulfillment;
+  event_ticket?: EventTicketFulfillment;
+  content_access?: ContentAccessFulfillment;
+  custom_message?: CustomMessageFulfillment;
+}
+
+export interface PayLinkCreateInputWithFulfillment extends Omit<PayLinkCreateInput, 'metadata'> {
+  fulfillment_type?: FulfillmentType;
+  fulfillment_data?: Partial<FulfillmentMetadata>;
 }
