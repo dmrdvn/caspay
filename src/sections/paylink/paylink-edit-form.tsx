@@ -124,46 +124,45 @@ export function PayLinkEditForm({ paylink, merchantId }: Props) {
   });
 
   const { handleSubmit, watch } = methods;
-  const selectedFulfillmentType = watch('fulfillment_type');
   const customSuccessUrl = watch('custom_success_url');
 
   const onSubmit = handleSubmit(async (data) => {
     try {
-      const fulfillmentMetadata: FulfillmentMetadata = {
+      const updatedMetadata: FulfillmentMetadata = {
         fulfillment_type: data.fulfillment_type || 'none',
         redirect_delay: data.redirect_delay || 10,
       };
 
       if (data.fulfillment_type === 'digital_download' && data.download_url) {
-        fulfillmentMetadata.digital_download = {
+        updatedMetadata.digital_download = {
           url: data.download_url,
           file_name: data.download_file_name,
           expires_hours: data.download_expires_hours || 0,
         };
       } else if (data.fulfillment_type === 'license_key' && data.license_key) {
-        fulfillmentMetadata.license_key = {
+        updatedMetadata.license_key = {
           key: data.license_key,
           instructions: data.license_instructions,
         };
       } else if (data.fulfillment_type === 'service_access' && data.service_access_url) {
-        fulfillmentMetadata.service_access = {
+        updatedMetadata.service_access = {
           access_url: data.service_access_url,
           username: data.service_username,
           instructions: data.service_instructions,
         };
       } else if (data.fulfillment_type === 'donation') {
-        fulfillmentMetadata.donation = {
+        updatedMetadata.donation = {
           campaign_name: data.donation_campaign,
           thank_you_note: data.donation_thank_you,
         };
       } else if (data.fulfillment_type === 'coupon_voucher' && data.coupon_code) {
-        fulfillmentMetadata.coupon_voucher = {
+        updatedMetadata.coupon_voucher = {
           coupon_code: data.coupon_code,
           discount_info: data.coupon_discount_info,
           expires_at: data.coupon_expires_at,
         };
       } else if (data.fulfillment_type === 'event_ticket' && data.event_name && data.event_date && data.event_ticket_code) {
-        fulfillmentMetadata.event_ticket = {
+        updatedMetadata.event_ticket = {
           event_name: data.event_name,
           event_date: data.event_date,
           ticket_code: data.event_ticket_code,
@@ -171,13 +170,13 @@ export function PayLinkEditForm({ paylink, merchantId }: Props) {
           additional_info: data.event_additional_info,
         };
       } else if (data.fulfillment_type === 'content_access' && data.content_url) {
-        fulfillmentMetadata.content_access = {
+        updatedMetadata.content_access = {
           content_url: data.content_url,
           access_duration_days: data.content_access_days || 0,
           instructions: data.content_instructions,
         };
       } else if (data.fulfillment_type === 'custom_message' && data.message_title && data.message_body) {
-        fulfillmentMetadata.custom_message = {
+        updatedMetadata.custom_message = {
           title: data.message_title,
           message: data.message_body,
         };
@@ -192,7 +191,7 @@ export function PayLinkEditForm({ paylink, merchantId }: Props) {
         custom_message: data.custom_message,
         custom_button_text: data.custom_button_text,
         max_uses: data.max_uses ?? undefined,
-        metadata: fulfillmentMetadata,
+        metadata: updatedMetadata,
       });
 
       toast.success('PayLink updated successfully!');

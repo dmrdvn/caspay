@@ -20,7 +20,7 @@ import { usePayLinkMutations } from 'src/hooks/use-paylinks';
 import { toast } from 'src/components/snackbar';
 import { Form, Field } from 'src/components/hook-form';
 
-import type { FulfillmentType, FulfillmentMetadata } from 'src/types/paylink';
+import type { FulfillmentMetadata } from 'src/types/paylink';
 
 // ----------------------------------------------------------------------
 

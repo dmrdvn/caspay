@@ -300,7 +300,7 @@ export function PaymentDialog({
                   }}
                 >
                   <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'error.darker' }}>
-                    "{fulfillmentMetadata.donation.thank_you_note}"
+                    &ldquo;{fulfillmentMetadata.donation.thank_you_note}&rdquo;
                   </Typography>
                 </Box>
               </>
