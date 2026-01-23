@@ -20,6 +20,10 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
 
 import { paths } from 'src/routes/paths';
 
@@ -39,6 +43,7 @@ export default function DemoNext() {
     const [walletConnected, setWalletConnected] = useState(false);
     const [walletAddress, setWalletAddress] = useState<string>('');
     const [connecting, setConnecting] = useState(false);
+    const [network, setNetwork] = useState<'testnet' | 'mainnet'>('testnet');
 
     const credentialsMethods = useForm({
         defaultValues: {
@@ -107,7 +112,7 @@ export default function DemoNext() {
                 apiKey: 'temp',
                 merchantId: 'temp',
                 walletAddress: 'temp',
-                network: 'testnet',
+                network: network,
                 baseUrl
             });
 
@@ -144,6 +149,16 @@ export default function DemoNext() {
             return null;
         }
 
+        // Check API key prefix and enforce network
+        let enforcedNetwork = network;
+        if (apiKey.startsWith('cp_live_')) {
+            enforcedNetwork = 'mainnet';
+            setNetwork('mainnet');
+        } else if (apiKey.startsWith('cp_test_')) {
+            enforcedNetwork = 'testnet';
+            setNetwork('testnet');
+        }
+
         if (!window.CasPay) {
             toast.error('SDK script not loaded yet');
             return null;
@@ -155,7 +170,7 @@ export default function DemoNext() {
             apiKey,
             merchantId,
             walletAddress: merchantWalletAddress,
-            network: 'testnet',
+            network: enforcedNetwork,
             baseUrl
         });
     };
@@ -304,6 +319,17 @@ export default function DemoNext() {
                                 }}
                             />
                         )}
+                        <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <InputLabel>Network</InputLabel>
+                            <Select
+                                value={network}
+                                label="Network"
+                                onChange={(e) => setNetwork(e.target.value as 'testnet' | 'mainnet')}
+                            >
+                                <MenuItem value="testnet">Testnet</MenuItem>
+                                <MenuItem value="mainnet">Mainnet</MenuItem>
+                            </Select>
+                        </FormControl>
                         <Button
                             variant="contained"
                             color={walletConnected ? 'error' : 'primary'}

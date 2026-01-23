@@ -3,6 +3,7 @@
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
@@ -21,7 +22,6 @@ import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
-// ----------------------------------------------------------------------
 
 export function MerchantListView() {
   const { merchants, isLoading } = useMerchants();
@@ -77,18 +77,32 @@ export function MerchantListView() {
               </Typography>
             </Box>
 
-            <Label
-              variant="soft"
-              color={
-                (merchant.status === 'active' && 'success') ||
-                (merchant.status === 'pending' && 'warning') ||
-                (merchant.status === 'suspended' && 'error') ||
-                'default'
-              }
-              sx={{ textTransform: 'capitalize' }}
-            >
-              {merchant.status}
-            </Label>
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <Label
+                variant="soft"
+                color={
+                  (merchant.status === 'active' && 'success') ||
+                  (merchant.status === 'pending' && 'warning') ||
+                  (merchant.status === 'suspended' && 'error') ||
+                  'default'
+                }
+                sx={{ textTransform: 'capitalize' }}
+              >
+                {merchant.status}
+              </Label>
+              
+              <Chip 
+                label={merchant.network || 'testnet'}
+                size="small"
+                color={merchant.network === 'mainnet' ? 'primary' : 'warning'}
+                sx={{
+                  height: 24,
+                  fontSize: '0.625rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                }}
+              />
+            </Stack>
           </Stack>
 
           <Button

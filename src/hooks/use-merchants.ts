@@ -149,6 +149,7 @@ export function useMerchantMutations() {
       support_url?: string;
       logo_url?: string;
       brand_color?: string;
+      network?: 'testnet' | 'mainnet';
     }) => {
       if (!userId) {
         throw new Error('User not authenticated');

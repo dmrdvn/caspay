@@ -181,7 +181,8 @@ export async function POST(req: NextRequest) {
           transaction_hash,
           merchant.wallet_address,
           amount,
-          sender_address 
+          sender_address,
+          merchant.network || 'testnet'
         );
 
         if (verification.valid) {
@@ -418,14 +419,16 @@ export async function POST(req: NextRequest) {
         await recordPayment(
           verification.sender,
           null,
-          plan.plan_id
+          plan.plan_id,
+          merchant.network || 'testnet'
         );
         if (!existingSubscription || existingSubscription.status !== 'active') {
           await createSubscription(
             subscriptionId,
             merchant.merchant_id,
             verification.sender,
-            plan.plan_id
+            plan.plan_id,
+            merchant.network || 'testnet'
           );
         }
       } catch (contractError: any) {
@@ -507,7 +510,8 @@ export async function POST(req: NextRequest) {
         await recordPayment(
           verification.sender,
           product.product_id,
-          null
+          null,
+          merchant.network || 'testnet'
         );
       } catch (contractError: any) {
         console.error('Contract recording failed:', contractError);

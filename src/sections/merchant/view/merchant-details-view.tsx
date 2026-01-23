@@ -3,6 +3,7 @@
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
@@ -215,9 +216,20 @@ export function MerchantDetailsView({ id }: Props) {
 
   const renderBlockchainInfo = () => (
     <Card sx={{ p: 3 }}>
-      <Typography variant="h6" sx={{ mb: 3 }}>
-        Blockchain Information
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h6">
+          Blockchain Information
+        </Typography>
+        <Chip 
+          label={merchant.network || 'testnet'}
+          size="small"
+          color={merchant.network === 'mainnet' ? 'primary' : 'warning'}
+          sx={{
+            fontWeight: 600,
+            textTransform: 'uppercase',
+          }}
+        />
+      </Box>
 
       <Stack spacing={2.5}>
         {/* Owner Wallet Address */}

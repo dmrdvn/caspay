@@ -70,7 +70,13 @@ export async function syncUserToSupabase(
       .single();
 
     if (insertError) {
-      console.error('Error creating user:', insertError);
+      console.error('Error creating user:', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint,
+        fullError: insertError
+      });
       throw insertError;
     }
 
@@ -86,8 +92,13 @@ export async function syncUserToSupabase(
       createdAt: newUser.created_at,
       updatedAt: newUser.updated_at,
     };
-  } catch (error) {
-    console.error('syncUserToSupabase error:', error);
+  } catch (error: any) {
+    console.error('syncUserToSupabase error:', {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      stack: error?.stack
+    });
     throw error;
   }
 }

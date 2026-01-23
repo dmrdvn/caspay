@@ -77,6 +77,7 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
           support_url: data.support_url || null,
           logo_url: data.logo_url || null,
           brand_color: data.brand_color || '#1890FF',
+          network: data.network || 'testnet',
           status: 'pending',
         },
       ])
@@ -91,14 +92,18 @@ export async function createMerchant(data: CreateMerchantData): Promise<Merchant
     try {
       const { registerMerchant: registerMerchantOnChain } = await import('src/lib/api/contract-service');
       
+      const network = merchant.network || 'testnet';
+      
       console.log('[createMerchant] Registering on blockchain...', {
         merchantId: merchant.merchant_id,
-        walletAddress: userProfile.public_key
+        walletAddress: userProfile.public_key,
+        network
       });
       
       const deployHash = await registerMerchantOnChain(
         merchant.merchant_id, 
-        userProfile.public_key
+        userProfile.public_key,
+        network
       );
       
       console.log('[createMerchant] Blockchain registration successful:', deployHash);
@@ -179,7 +184,7 @@ export async function updateMerchantStatus(
       .from('merchants')
       .update({ status })
       .eq('id', merchantId)
-      .select()
+      .select('*, network')
       .single();
 
     if (error) {
@@ -207,7 +212,8 @@ export async function updateMerchantStatus(
       
       const deployHash = await updateMerchantStatusOnChain(
         merchant.merchant_id,
-        statusEnum
+        statusEnum,
+        merchant.network || 'testnet'
       );
       
       console.log('[updateMerchantStatus] Blockchain update successful:', deployHash);

@@ -65,7 +65,7 @@ export async function createProduct(input: ProductCreateInput): Promise<Product>
     .insert(productData)
     .select(`
       *,
-      merchant:merchants!inner(merchant_id)
+      merchant:merchants!inner(merchant_id, network)
     `)
     .single();
 
@@ -78,6 +78,7 @@ export async function createProduct(input: ProductCreateInput): Promise<Product>
     const { createProduct: createProductOnChain } = await import('src/lib/api/contract-service');
     
     const merchantCustomId = (data as any).merchant?.merchant_id;
+    const merchantNetwork = (data as any).merchant?.network || 'testnet';
     
     if (!merchantCustomId) {
       throw new Error('Merchant custom ID not found');
@@ -86,13 +87,15 @@ export async function createProduct(input: ProductCreateInput): Promise<Product>
     console.log('[createProduct] Registering on blockchain...', {
       productId: data.product_id,
       merchantCustomId,
-      price: data.price
+      price: data.price,
+      network: merchantNetwork
     });
     
     const deployHash = await createProductOnChain(
       merchantCustomId,
       data.product_id,
-      data.price.toString()
+      data.price.toString(),
+      merchantNetwork
     );
     
     console.log('[createProduct] Blockchain registration successful:', deployHash);
@@ -171,7 +174,7 @@ export async function hardDeleteProduct(productId: string): Promise<void> {
 export async function toggleProductStatus(productId: string): Promise<Product> {
   const { data: currentProduct, error: fetchError } = await supabase
     .from('products')
-    .select('active')
+    .select('active, merchant:merchants(network)')
     .eq('id', productId)
     .single();
 
@@ -187,7 +190,7 @@ export async function toggleProductStatus(productId: string): Promise<Product> {
       updated_at: new Date().toISOString(),
     })
     .eq('id', productId)
-    .select()
+    .select('*, merchant:merchants(network)')
     .single();
 
   if (error) {
@@ -205,7 +208,8 @@ export async function toggleProductStatus(productId: string): Promise<Product> {
     
     const deployHash = await updateProductStatusOnChain(
       data.id,
-      data.active
+      data.active,
+      (data as any).merchant?.network || 'testnet'
     );
     
     console.log('[toggleProductStatus] Blockchain update successful:', deployHash);

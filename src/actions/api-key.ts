@@ -47,6 +47,28 @@ export async function getApiKeyById(keyId: string): Promise<ApiKeyListItem> {
 export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyWithSecret> {
   const { merchant_id, name, environment, permissions, expires_at } = input;
 
+  // Check merchant's network to ensure key environment matches
+  const { data: merchant, error: merchantError } = await supabase
+    .from('merchants')
+    .select('network')
+    .eq('id', merchant_id)
+    .single();
+
+  if (merchantError) {
+    console.error('Error fetching merchant:', merchantError);
+    throw new Error(`Failed to fetch merchant: ${merchantError.message}`);
+  }
+
+  if (!merchant) {
+    throw new Error('Merchant not found');
+  }
+
+  // Validate that the environment matches the merchant's network
+  if ((merchant.network === 'mainnet' && environment !== 'live') || 
+      (merchant.network === 'testnet' && environment !== 'test')) {
+    throw new Error(`API key environment must match merchant network. Merchant network: ${merchant.network}, requested environment: ${environment}`);
+  }
+
   const apiKey = generateApiKey(environment);
   const keyHash = await hashApiKey(apiKey);
   const keyHint = generateKeyHint(apiKey);
@@ -114,10 +136,9 @@ export async function deleteApiKey(keyId: string): Promise<void> {
 }
 
 export async function rotateApiKey(keyId: string): Promise<ApiKeyWithSecret> {
-
   const { data: currentKey, error: fetchError } = await supabase
     .from('api_keys')
-    .select('*')
+    .select('*, merchant:merchants(network)')
     .eq('id', keyId)
     .single();
 
@@ -130,7 +151,12 @@ export async function rotateApiKey(keyId: string): Promise<ApiKeyWithSecret> {
     throw new Error('API key not found');
   }
 
-  const environment = currentKey.key_prefix === 'cp_live_' ? 'live' : 'test';
+  if (!(currentKey as any).merchant) {
+    throw new Error('Merchant not found for API key');
+  }
+
+  const merchantNetwork = (currentKey as any).merchant.network;
+  const environment = merchantNetwork === 'mainnet' ? 'live' : 'test';
 
   const newKey = await createApiKey({
     merchant_id: currentKey.merchant_id,

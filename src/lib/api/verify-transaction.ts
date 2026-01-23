@@ -22,9 +22,6 @@ export interface TransactionVerification {
   error?: string;
 }
 
-const NETWORK_NAME = process.env.NEXT_PUBLIC_NETWORK || 'casper-test';
-const IS_MAINNET = NETWORK_NAME === 'casper';
-
 const NOWNODES_RPC_URL_MAINNET = process.env.NEXT_PUBLIC_RPC_URL_MAINNET!;
 const CSPR_CLOUD_RPC_URL_TESTNET = process.env.NEXT_PUBLIC_RPC_URL!;
 const NOWNODES_API_KEY = process.env.NOWNODES_API_KEY;
@@ -32,50 +29,44 @@ const FALLBACK_RPC_URL_TESTNET = process.env.FALLBACK_RPC_URL_TESTNET || 'https:
 const FALLBACK_RPC_URL_MAINNET = process.env.FALLBACK_RPC_URL_MAINNET || 'https://node.mainnet.cspr.cloud/rpc';
 const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
 
-let casperClient: RpcClient | null = null;
-let fallbackClient: RpcClient | null = null;
-
-function getCasperClient(): RpcClient {
-  if (!casperClient) {
-    const primaryUrl = IS_MAINNET ? NOWNODES_RPC_URL_MAINNET : CSPR_CLOUD_RPC_URL_TESTNET;
-    const handler = new HttpHandler(primaryUrl);
-    if (IS_MAINNET && NOWNODES_API_KEY) {
-      handler.setCustomHeaders({
-        'api-key': NOWNODES_API_KEY
-      });
-    }
-    else if (!IS_MAINNET && CSPR_CLOUD_API_KEY) {
-      handler.setCustomHeaders({
-        'Authorization': CSPR_CLOUD_API_KEY
-      });
-    }
-    
-    casperClient = new RpcClient(handler);
+function getCasperClient(network: 'testnet' | 'mainnet' = 'testnet'): RpcClient {
+  const isMainnet = network === 'mainnet';
+  const primaryUrl = isMainnet ? NOWNODES_RPC_URL_MAINNET : CSPR_CLOUD_RPC_URL_TESTNET;
+  const handler = new HttpHandler(primaryUrl);
+  
+  if (isMainnet && NOWNODES_API_KEY) {
+    handler.setCustomHeaders({
+      'api-key': NOWNODES_API_KEY
+    });
+  } else if (!isMainnet && CSPR_CLOUD_API_KEY) {
+    handler.setCustomHeaders({
+      'Authorization': CSPR_CLOUD_API_KEY
+    });
   }
-  return casperClient;
+  
+  return new RpcClient(handler);
 }
 
-function getFallbackClient(): RpcClient {
-  if (!fallbackClient) {
-    const fallbackUrl = IS_MAINNET ? FALLBACK_RPC_URL_MAINNET : FALLBACK_RPC_URL_TESTNET;
-    const handler = new HttpHandler(fallbackUrl);
-    
-    if (CSPR_CLOUD_API_KEY) {
-      handler.setCustomHeaders({
-        'Authorization': CSPR_CLOUD_API_KEY
-      });
-    }
-    
-    fallbackClient = new RpcClient(handler);
+function getFallbackClient(network: 'testnet' | 'mainnet' = 'testnet'): RpcClient {
+  const isMainnet = network === 'mainnet';
+  const fallbackUrl = isMainnet ? FALLBACK_RPC_URL_MAINNET : FALLBACK_RPC_URL_TESTNET;
+  const handler = new HttpHandler(fallbackUrl);
+  
+  if (CSPR_CLOUD_API_KEY) {
+    handler.setCustomHeaders({
+      'Authorization': CSPR_CLOUD_API_KEY
+    });
   }
-  return fallbackClient;
+  
+  return new RpcClient(handler);
 }
 
 export async function verifyTransaction(
   deployHash: string,
   expectedRecipient: string,
   expectedAmount: number,
-  senderAddress?: string 
+  senderAddress?: string,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<TransactionVerification> {
   const mockMode = process.env.MOCK_TRANSACTION_VERIFICATION === 'true';
 
@@ -88,13 +79,14 @@ export async function verifyTransaction(
       expectedRecipient,
       expectedAmount,
       senderAddress,
+      network,
       reason: mockMode ? 'MOCK_MODE_ENABLED' : 'FAKE_HASH_DETECTED'
     });
     
     return {
       valid: true,
       deployHash,
-      amount: Math.floor(expectedAmount * 1e9), // CSPR to motes
+      amount: Math.floor(expectedAmount * 1e9),
       recipient: expectedRecipient,
       sender: senderAddress || '',
       timestamp: new Date().toISOString()
@@ -102,14 +94,14 @@ export async function verifyTransaction(
   }
 
   try {
-    const client = getCasperClient();
+    const client = getCasperClient(network);
     let result;
     
     try {
       result = await client.getDeploy(deployHash);
     } catch (primaryError: any) {
-      console.warn('[verifyTransaction] NowNodes failed, trying fallback...', primaryError.message);
-      const fallback = getFallbackClient();
+      console.warn(`[verifyTransaction] Primary RPC failed for ${network}, trying fallback...`, primaryError.message);
+      const fallback = getFallbackClient(network);
       result = await fallback.getDeploy(deployHash);
     }
     

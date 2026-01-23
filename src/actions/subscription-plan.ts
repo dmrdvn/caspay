@@ -73,7 +73,7 @@ export async function createSubscriptionPlan(
     .insert(planData)
     .select(`
       *,
-      merchant:merchants!inner(merchant_id)
+      merchant:merchants!inner(merchant_id, network)
     `)
     .single();
 
@@ -86,6 +86,7 @@ export async function createSubscriptionPlan(
     const { createSubscriptionPlan: createPlanOnChain, getIntervalValue } = await import('src/lib/api/contract-service');
     
     const merchantCustomId = (data as any).merchant?.merchant_id;
+    const merchantNetwork = (data as any).merchant?.network || 'testnet';
     
     if (!merchantCustomId) {
       throw new Error('Merchant custom ID not found');
@@ -95,7 +96,8 @@ export async function createSubscriptionPlan(
       planId: data.plan_id,
       merchantCustomId,
       price: data.price,
-      interval: data.interval
+      interval: data.interval,
+      network: merchantNetwork
     });
     
     const intervalEnum = getIntervalValue(data.interval as 'weekly' | 'monthly' | 'yearly');
@@ -106,7 +108,8 @@ export async function createSubscriptionPlan(
       data.price.toString(),
       intervalEnum,
       data.interval_count,
-      data.trial_days
+      data.trial_days,
+      merchantNetwork
     );
     
     console.log('[createSubscriptionPlan] Blockchain registration successful:', deployHash);
@@ -187,7 +190,7 @@ export async function toggleSubscriptionPlanStatus(
 
   const { data: currentPlan, error: fetchError } = await supabase
     .from('subscription_plans')
-    .select('active')
+    .select('active, merchant:merchants(network)')
     .eq('id', planId)
     .single();
 
@@ -203,7 +206,7 @@ export async function toggleSubscriptionPlanStatus(
       updated_at: new Date().toISOString(),
     })
     .eq('id', planId)
-    .select()
+    .select('*, merchant:merchants(network)')
     .single();
 
   if (error) {
@@ -222,7 +225,8 @@ export async function toggleSubscriptionPlanStatus(
     
     const deployHash = await updatePlanStatusOnChain(
       data.id,
-      data.active
+      data.active,
+      (data as any).merchant?.network || 'testnet'
     );
     
     console.log('[toggleSubscriptionPlanStatus] Blockchain update successful:', deployHash);

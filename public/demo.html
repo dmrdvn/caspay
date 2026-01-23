@@ -475,6 +475,7 @@
       <div id="walletStatusBox" class="wallet-status" style="display: none;">
         <div class="status-dot"></div>
         <span id="walletAddressShort" class="wallet-addr"></span>
+        <span id="networkChip" class="network-chip" style="margin-left: 8px; padding: 2px 6px; background: rgba(0, 184, 217, 0.12); border: 1px solid rgba(0, 184, 217, 0.3); border-radius: 4px; font-size: 11px;"></span>
       </div>
       <button id="connectWalletBtn" class="connect-wallet-btn">
         <span>🔗</span>
@@ -500,7 +501,7 @@
           <div class="card-title">Configuration</div>
           <div class="card-subtitle">Set your merchant credentials</div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px;">
           <div class="form-group" style="margin-bottom: 0;">
             <label>Merchant ID</label>
             <input type="text" id="merchantId" placeholder="Enter your merchant ID">
@@ -512,6 +513,13 @@
           <div class="form-group" style="margin-bottom: 0;">
             <label>Wallet Address (Receive Payments)</label>
             <input type="text" id="walletAddress" placeholder="Merchant wallet to receive payments">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Network</label>
+            <select id="networkSelect" style="cursor: pointer;" onchange="updateNetworkDisplay()">
+              <option value="testnet">Testnet</option>
+              <option value="mainnet">Mainnet</option>
+            </select>
           </div>
         </div>
       </div>
@@ -772,11 +780,16 @@
     function updateWalletStatus(connected, address) {
       const statusBox = document.getElementById('walletStatusBox');
       const addressShort = document.getElementById('walletAddressShort');
+      const networkChip = document.getElementById('networkChip');
       const btn = document.getElementById('connectWalletBtn');
+      const network = document.getElementById('networkSelect').value || 'testnet';
 
       if (connected && address) {
         statusBox.style.display = 'flex';
         addressShort.textContent = `${address.slice(0, 10)}...${address.slice(-8)}`;
+        networkChip.textContent = network.toUpperCase();
+        networkChip.style.backgroundColor = network === 'mainnet' ? 'rgba(255, 86, 48, 0.16)' : 'rgba(0, 184, 217, 0.12)';
+        networkChip.style.borderColor = network === 'mainnet' ? 'rgba(255, 86, 48, 0.3)' : 'rgba(0, 184, 217, 0.3)';
         btn.innerHTML = '<span>❌</span><span>Disconnect</span>';
         walletConnected = true;
       } else {
@@ -786,14 +799,37 @@
       }
     }
 
+    function updateNetworkDisplay() {
+      const networkChip = document.getElementById('networkChip');
+      const network = document.getElementById('networkSelect').value || 'testnet';
+      
+      if (walletConnected) {
+        networkChip.textContent = network.toUpperCase();
+        networkChip.style.backgroundColor = network === 'mainnet' ? 'rgba(255, 86, 48, 0.16)' : 'rgba(0, 184, 217, 0.12)';
+        networkChip.style.borderColor = network === 'mainnet' ? 'rgba(255, 86, 48, 0.3)' : 'rgba(0, 184, 217, 0.3)';
+      }
+    }
+
     function initCasPay() {
       const merchantId = document.getElementById('merchantId').value;
       const apiKey = document.getElementById('apiKey').value;
       const walletAddress = document.getElementById('walletAddress').value;
+      let network = document.getElementById('networkSelect').value;
 
       if (!merchantId || !apiKey || !walletAddress) {
         alert('Please enter Merchant ID, API Key, and Wallet Address first');
         return null;
+      }
+
+      // Check API key prefix and enforce network
+      if (apiKey.startsWith('cp_live_')) {
+        network = 'mainnet';
+        document.getElementById('networkSelect').value = 'mainnet';
+        updateNetworkDisplay();
+      } else if (apiKey.startsWith('cp_test_')) {
+        network = 'testnet';
+        document.getElementById('networkSelect').value = 'testnet';
+        updateNetworkDisplay();
       }
 
       if (!caspay) {
@@ -804,7 +840,7 @@
           apiKey,
           merchantId,
           walletAddress,
-          network: 'testnet',
+          network: network,
           baseUrl
         });
       }
@@ -828,12 +864,13 @@
       btn.disabled = true;
 
       try {
-        // Create temporary SDK instance just for wallet connection
+        const network = document.getElementById('networkSelect').value || 'testnet';
+        
         const tempSDK = new CasPay({
           apiKey: 'temp',
           merchantId: 'temp',
           walletAddress: 'temp',
-          network: 'testnet',
+          network: network,
           baseUrl: window.location.hostname === 'localhost' ? `${window.location.origin}/api` : 'https://caspay.link/api'
         });
 

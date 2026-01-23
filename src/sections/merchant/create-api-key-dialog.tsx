@@ -25,10 +25,9 @@ import { useApiKeyMutations } from 'src/hooks/use-api-keys';
 import { Iconify } from 'src/components/iconify';
 import { Form, Field } from 'src/components/hook-form';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   merchantId: string;
+  merchantNetwork: 'testnet' | 'mainnet';
   open: boolean;
   onClose: () => void;
 };
@@ -45,14 +44,18 @@ type FormValues = {
   expirationOption: 'never' | '7days' | '30days';
 };
 
-export function CreateApiKeyDialog({ merchantId, open, onClose }: Props) {
+export function CreateApiKeyDialog({ merchantId, merchantNetwork, open, onClose }: Props) {
   const { createKey } = useApiKeyMutations(merchantId);
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Set default environment based on merchant network
+  const defaultEnvironment = merchantNetwork === 'mainnet' ? 'live' : 'test';
 
   const methods = useForm<FormValues>({
     defaultValues: {
       name: '',
-      environment: 'test',
+      environment: defaultEnvironment,
       showAdvanced: false,
       permissions: {
         read_subscriptions: true,
@@ -75,6 +78,8 @@ export function CreateApiKeyDialog({ merchantId, open, onClose }: Props) {
 
   const onSubmit = handleSubmit(async (data) => {
     try {
+      setFormError(null);
+      
       // Build permissions
       const scopes: ApiKeyScope[] = [];
       if (data.permissions.read_subscriptions) scopes.push('read:subscriptions');
@@ -107,6 +112,8 @@ export function CreateApiKeyDialog({ merchantId, open, onClose }: Props) {
       setNewApiKey(result.key);
     } catch (error) {
       console.error('Failed to create API key:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred while creating the API key';
+      setFormError(errorMessage);
     }
   });
 
@@ -174,6 +181,12 @@ export function CreateApiKeyDialog({ merchantId, open, onClose }: Props) {
         ) : (
           <Form methods={methods} onSubmit={onSubmit}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              {formError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  <Typography variant="body2">{formError}</Typography>
+                </Alert>
+              )}
+
               <Field.Text
                 name="name"
                 label="Key Name"
@@ -182,13 +195,26 @@ export function CreateApiKeyDialog({ merchantId, open, onClose }: Props) {
               />
 
               <Field.Select name="environment" label="Environment">
-                <MenuItem value="test">Test Mode</MenuItem>
-                <MenuItem value="live">Live Mode</MenuItem>
+                {(merchantNetwork === 'testnet' || merchantNetwork === 'mainnet') ? (
+                  [
+                    ...(merchantNetwork === 'testnet' ? [<MenuItem key="test" value="test">Test Mode</MenuItem>] : []),
+                    ...(merchantNetwork === 'mainnet' ? [<MenuItem key="live" value="live">Live Mode</MenuItem>] : []),
+                    ...(merchantNetwork === 'testnet' ? [<MenuItem key="live-disabled" value="live" disabled>Live Mode (Not available for testnet merchants)</MenuItem>] : []),
+                    ...(merchantNetwork === 'mainnet' ? [<MenuItem key="test-disabled" value="test" disabled>Test Mode (Not available for mainnet merchants)</MenuItem>] : [])
+                  ]
+                ) : (
+                  [
+                    <MenuItem key="test" value="test">Test Mode</MenuItem>,
+                    <MenuItem key="live" value="live">Live Mode</MenuItem>
+                  ]
+                )}
               </Field.Select>
 
               <Alert severity="info">
                 <Typography variant="body2">
-                  Test keys can only be used in test mode. Live keys will process real transactions.
+                  {merchantNetwork === 'mainnet'
+                    ? 'Live keys can only be used on mainnet. Test keys can only be used on testnet.'
+                    : 'Test keys can only be used on testnet. Live keys can only be used on mainnet.'}
                 </Typography>
               </Alert>
 

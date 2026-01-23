@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 import { usePopover } from 'minimal-shared/hooks';
 
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
 import MenuList from '@mui/material/MenuList';
@@ -139,6 +140,20 @@ export function MerchantsPopover({
         {merchant?.status}
       </Label>
 
+      <Chip 
+        label={merchant?.network || 'testnet'}
+        size="small"
+        color={merchant?.network === 'mainnet' ? 'primary' : 'warning'}
+        sx={{
+          height: 22,
+          fontSize: '0.625rem',
+          fontWeight: 600,
+          cursor: 'inherit',
+          textTransform: 'uppercase',
+          display: { xs: 'none', [mediaQuery]: 'inline-flex' },
+        }}
+      />
+
       <Iconify width={16} icon="carbon:chevron-sort" sx={{ color: 'text.disabled' }} />
     </ButtonBase>
   );
@@ -178,6 +193,19 @@ export function MerchantsPopover({
               >
                 {option.store_name}
               </Typography>
+
+              <Chip 
+                label={option.network || 'testnet'}
+                size="small"
+                color={option.network === 'mainnet' ? 'primary' : 'warning'}
+                sx={{
+                  height: 20,
+                  fontSize: '0.625rem',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  mr: 0.5,
+                }}
+              />
 
               <Label 
                 color={option.status === 'active' ? 'success' : 'default'}

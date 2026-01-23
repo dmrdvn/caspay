@@ -17,6 +17,7 @@ export interface ValidatedMerchant {
   merchant_id: string;
   wallet_address: string;
   status: string;
+  network?: 'testnet' | 'mainnet';
   api_key_id: string;
   permissions: string[];
   rate_limit?: {
@@ -93,7 +94,8 @@ export async function validatePublicApiKey(
           id,
           merchant_id,
           wallet_address,
-          status
+          status,
+          network
         )
       `)
       .eq('key_hash', keyHash)
@@ -148,6 +150,7 @@ export async function validatePublicApiKey(
       merchant_id: merchant.merchant_id,
       wallet_address: merchant.wallet_address,
       status: merchant.status,
+      network: merchant.network || 'testnet',
       api_key_id: apiKeyData.id,
       permissions,
       rate_limit: {
@@ -206,7 +209,8 @@ export async function validateSecretApiKey(
           id,
           merchant_id,
           wallet_address,
-          status
+          status,
+          network
         )
       `)
       .eq('key_hash', keyHash)
@@ -238,6 +242,7 @@ export async function validateSecretApiKey(
       merchant_id: merchant.merchant_id,
       wallet_address: merchant.wallet_address,
       status: merchant.status,
+      network: merchant.network || 'testnet',
       api_key_id: apiKeyData.id,
       permissions: (apiKeyData.permissions as any)?.scopes || ['read:all', 'write:all']
     };

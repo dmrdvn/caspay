@@ -61,47 +61,33 @@ const FALLBACK_RPC_URL_TESTNET = process.env.FALLBACK_RPC_URL_TESTNET || 'https:
 const FALLBACK_RPC_URL_MAINNET = process.env.FALLBACK_RPC_URL_MAINNET || 'https://node.mainnet.cspr.cloud/rpc';
 const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
 
-const NETWORK_NAME = process.env.NEXT_PUBLIC_NETWORK || 'casper-test';
-const IS_MAINNET = NETWORK_NAME === 'casper';
-
-const CONTRACT_PACKAGE_HASH = IS_MAINNET
-  ? process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH_MAINNET
-  : process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH_TESTNET || process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH;
-
 if (!PRIVATE_KEY_BASE64) {
   throw new Error('CASPAY_ADMIN_PRIVATE_KEY environment variable is required');
 }
 
-if (!CONTRACT_PACKAGE_HASH) {
-  throw new Error('NEXT_PUBLIC_CONTRACT_PACKAGE_HASH environment variable is required');
-}
-
-let rpcClientInstance: RpcClient | null = null;
 let privateKeyInstance: PrivateKey | null = null;
 
-function getRpcClient(): RpcClient {
-  if (!rpcClientInstance) {
-    const primaryUrl = IS_MAINNET && RPC_URL_MAINNET ? RPC_URL_MAINNET : RPC_URL;
-    const rpcHandler = new HttpHandler(primaryUrl);
-    
-    if (IS_MAINNET && NOWNODES_API_KEY && RPC_URL_MAINNET) {
-      rpcHandler.setCustomHeaders({
-        'api-key': NOWNODES_API_KEY
-      });
-    }
-    else if (!IS_MAINNET && CSPR_CLOUD_API_KEY) {
-      rpcHandler.setCustomHeaders({
-        'Authorization': CSPR_CLOUD_API_KEY
-      });
-    }
-    
-    rpcClientInstance = new RpcClient(rpcHandler);
+function getRpcClient(network: 'testnet' | 'mainnet' = 'testnet'): RpcClient {
+  const isMainnet = network === 'mainnet';
+  const primaryUrl = isMainnet && RPC_URL_MAINNET ? RPC_URL_MAINNET : RPC_URL;
+  const rpcHandler = new HttpHandler(primaryUrl);
+  
+  if (isMainnet && NOWNODES_API_KEY && RPC_URL_MAINNET) {
+    rpcHandler.setCustomHeaders({
+      'api-key': NOWNODES_API_KEY
+    });
+  } else if (!isMainnet && CSPR_CLOUD_API_KEY) {
+    rpcHandler.setCustomHeaders({
+      'Authorization': CSPR_CLOUD_API_KEY
+    });
   }
-  return rpcClientInstance;
+  
+  return new RpcClient(rpcHandler);
 }
 
-function getFallbackRpcClient(): RpcClient {
-  const fallbackUrl = IS_MAINNET ? FALLBACK_RPC_URL_MAINNET : FALLBACK_RPC_URL_TESTNET;
+function getFallbackRpcClient(network: 'testnet' | 'mainnet' = 'testnet'): RpcClient {
+  const isMainnet = network === 'mainnet';
+  const fallbackUrl = isMainnet ? FALLBACK_RPC_URL_MAINNET : FALLBACK_RPC_URL_TESTNET;
   const fallbackHandler = new HttpHandler(fallbackUrl);
   
   if (CSPR_CLOUD_API_KEY) {
@@ -128,22 +114,32 @@ async function getPrivateKey(): Promise<PrivateKey> {
 export async function callContract(
   entryPoint: string,
   args: Args,
-  paymentAmount: string = '10000000000'
+  paymentAmount: string = '10000000000',
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   try {
     const privateKey = await getPrivateKey();
     const publicKey = privateKey.publicKey;
 
+    const chainName = network === 'mainnet' ? 'casper' : 'casper-test';
+    const contractHash = network === 'mainnet'
+      ? process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH_MAINNET
+      : process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH_TESTNET;
+
+    if (!contractHash) {
+      throw new Error(`Contract hash not configured for ${network}`);
+    }
+
     const deployHeader = DeployHeader.default();
     deployHeader.account = publicKey;
-    deployHeader.chainName = NETWORK_NAME;
+    deployHeader.chainName = chainName;
 
-    const contractHashBytes = BufferPolyfill.from(CONTRACT_PACKAGE_HASH!, 'hex');
+    const contractHashBytes = BufferPolyfill.from(contractHash, 'hex');
     const hash = new Hash(contractHashBytes);
-    const contractHash = new ContractHash(hash, '');
+    const contractHashObj = new ContractHash(hash, '');
     
     const storedContract = new StoredVersionedContractByHash(
-      contractHash,
+      contractHashObj,
       entryPoint,
       args,
       1
@@ -158,15 +154,15 @@ export async function callContract(
 
     deploy.sign(privateKey);
 
-    const rpcClient = getRpcClient();
+    const rpcClient = getRpcClient(network);
     
     try {
       const result = await rpcClient.putDeploy(deploy);
       const deployHashHex = result.deployHash.toHex();
       return deployHashHex;
     } catch (primaryError: any) {
-      console.warn('[callContract] NowNodes failed, trying fallback...', primaryError.message);
-      const fallbackClient = getFallbackRpcClient();
+      console.warn(`[callContract] Primary RPC failed for ${network}, trying fallback...`, primaryError.message);
+      const fallbackClient = getFallbackRpcClient(network);
       const result = await fallbackClient.putDeploy(deploy);
       const deployHashHex = result.deployHash.toHex();
       return deployHashHex;
@@ -296,9 +292,10 @@ export function motesToCspr(motes: string): number {
 
 export async function waitForDeploy(
   deployHash: string,
-  timeoutMs: number = 180000
+  timeoutMs: number = 180000,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<any> {
-  const rpcClient = getRpcClient();
+  const rpcClient = getRpcClient(network);
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeoutMs) {
@@ -316,9 +313,9 @@ export async function waitForDeploy(
       }
     } catch (error: any) {
       if (!error.message.includes('not found')) {
-        console.warn('[waitForDeploy] NowNodes error, trying fallback...');
+        console.warn('[waitForDeploy] Primary RPC error, trying fallback...');
         try {
-          const fallbackClient = getFallbackRpcClient();
+          const fallbackClient = getFallbackRpcClient(network);
           const result = await fallbackClient.getDeploy(deployHash);
           
           if (result.executionResultsV1 && result.executionResultsV1.length > 0) {

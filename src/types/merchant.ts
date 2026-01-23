@@ -13,6 +13,7 @@ export type Merchant = {
   transaction_hash?: string | null; 
   contract_deployed_at?: string | null;
   status: 'pending' | 'active' | 'suspended' | 'closed';
+  network: 'testnet' | 'mainnet';
   created_at?: string;
 };
 
@@ -36,6 +37,7 @@ export type CreateMerchantData = {
   support_url?: string;
   logo_url?: string;
   brand_color?: string;
+  network?: 'testnet' | 'mainnet';
 };
 
 /**

@@ -21,8 +21,7 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { ApiKeyList } from '../api-key-list';
 import { WebhookList } from '../webhook-list';
-
-// ----------------------------------------------------------------------
+import { CreateApiKeyDialog } from '../create-api-key-dialog';
 
 type Props = {
   merchantId: string;
@@ -35,6 +34,7 @@ export function MerchantIntegrationView({ merchantId }: Props) {
   const { webhooks, isLoading: isLoadingWebhooks } = useWebhooks(merchantId);
   const { deleteWebhook, testWebhook } = useWebhookMutations(merchantId);
   const [currentTab, setCurrentTab] = useState('api-keys');
+  const [openCreateApiKey, setOpenCreateApiKey] = useState(false);
 
   const TABS = [
     {
@@ -110,11 +110,13 @@ export function MerchantIntegrationView({ merchantId }: Props) {
         {currentTab === 'api-keys' && (
           <ApiKeyList
             merchantId={merchantId}
+            merchantNetwork={merchant?.network || 'testnet'}
             apiKeys={apiKeys}
             isLoading={isLoadingKeys}
             onDelete={deleteKey}
             onRotate={rotateKey}
             onToggleStatus={toggleStatus}
+            onCreateOpen={() => setOpenCreateApiKey(true)}
           />
         )}
         {currentTab === 'webhooks' && (
@@ -127,6 +129,14 @@ export function MerchantIntegrationView({ merchantId }: Props) {
           />
         )}
       </Card>
+      
+      {/* API Keys Creation Dialog */}
+      <CreateApiKeyDialog
+        merchantId={merchantId}
+        merchantNetwork={merchant?.network || 'testnet'}
+        open={openCreateApiKey}
+        onClose={() => setOpenCreateApiKey(false)}
+      />
     </DashboardContent>
   );
 }

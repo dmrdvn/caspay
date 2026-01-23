@@ -39,6 +39,7 @@ export const MerchantSchema = z.object({
   support_url: z.string().url().optional().or(z.literal('')),
   logo_url: z.string().url().optional().or(z.literal('')),
   brand_color: z.string().regex(/^#([A-Fa-f0-9]{6})$/).optional(),
+  network: z.enum(['testnet', 'mainnet']).default('testnet'),
 });
 
 // ----------------------------------------------------------------------
@@ -62,6 +63,7 @@ export function MerchantCreateEditForm({ currentMerchant }: Props) {
     support_url: currentMerchant?.support_url || '',
     logo_url: currentMerchant?.logo_url || '',
     brand_color: currentMerchant?.brand_color || '#1890FF',
+    network: currentMerchant?.network || 'testnet',
   };
 
   const methods = useForm({
@@ -100,6 +102,7 @@ export function MerchantCreateEditForm({ currentMerchant }: Props) {
           support_url: data.support_url || undefined,
           logo_url: data.logo_url || undefined,
           brand_color: data.brand_color,
+          network: data.network,
         });
         toast.success('Merchant created successfully!');
       }
@@ -153,6 +156,19 @@ export function MerchantCreateEditForm({ currentMerchant }: Props) {
               <MenuItem value="dao">DAO</MenuItem>
             </Field.Select>
           </Stack>
+
+          {!currentMerchant && (
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2">Data Storaged Network</Typography>
+              <Field.Select name="network">
+                <MenuItem value="testnet">Casper Testnet (Development & Testing)</MenuItem>
+                <MenuItem value="mainnet">Casper Mainnet (Production)</MenuItem>
+              </Field.Select>
+              <Typography variant="caption" color="text.secondary">
+                Network cannot be changed after merchant creation
+              </Typography>
+            </Stack>
+          )}
 
           <Box
             sx={{

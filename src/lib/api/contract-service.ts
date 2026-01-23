@@ -12,7 +12,8 @@ import {
 
 export async function registerMerchant(
   merchantId: string,
-  walletAddress: string
+  walletAddress: string,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   const publicKey = PublicKey.fromHex(walletAddress);
   
@@ -26,21 +27,22 @@ export async function registerMerchant(
     wallet_address: CLValue.newCLKey(addressKey)
   });
   
-  const deployHash = await callContract('register_merchant', args, csprToMotes(5));
+  const deployHash = await callContract('register_merchant', args, csprToMotes(5), network);
   
   return deployHash;
 }
 
 export async function updateMerchantStatus(
   merchantId: string,
-  newStatus: number
+  newStatus: number,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   const args = createEmptyArgs();
   
   addStringArg(args, 'merchant_id', merchantId);
   addU32Arg(args, 'new_status', newStatus);
   
-  const deployHash = await callContract('update_merchant_status', args, csprToMotes(3));
+  const deployHash = await callContract('update_merchant_status', args, csprToMotes(3), network);
   
   return deployHash;
 }
@@ -48,7 +50,8 @@ export async function updateMerchantStatus(
 export async function createProduct(
   merchantId: string,
   productId: string,
-  price: string
+  price: string,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   const args = Args.fromMap({
     merchant_id: CLValue.newCLString(merchantId),
@@ -56,21 +59,22 @@ export async function createProduct(
     price: CLValue.newCLUInt512(price)
   });
   
-  const deployHash = await callContract('create_product', args, csprToMotes(5));
+  const deployHash = await callContract('create_product', args, csprToMotes(5), network);
   
   return deployHash;
 }
 
 export async function updateProductStatus(
   productId: string,
-  active: boolean
+  active: boolean,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   const args = createEmptyArgs();
   
   addStringArg(args, 'product_id', productId);
   addBoolArg(args, 'active', active);
   
-  const deployHash = await callContract('update_product_status', args, csprToMotes(3));
+  const deployHash = await callContract('update_product_status', args, csprToMotes(3), network);
   
   return deployHash;
 }
@@ -81,7 +85,8 @@ export async function createSubscriptionPlan(
   price: string,
   interval: number,
   intervalCount: number,
-  trialDays: number
+  trialDays: number,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   const args = Args.fromMap({
     merchant_id: CLValue.newCLString(merchantId),
@@ -92,21 +97,22 @@ export async function createSubscriptionPlan(
     trial_days: CLValue.newCLUInt32(trialDays)
   });
   
-  const deployHash = await callContract('create_subscription_plan', args, csprToMotes(5));
+  const deployHash = await callContract('create_subscription_plan', args, csprToMotes(5), network);
   
   return deployHash;
 }
 
 export async function updatePlanStatus(
   planId: string,
-  active: boolean
+  active: boolean,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   const args = createEmptyArgs();
   
   addStringArg(args, 'plan_id', planId);
   addBoolArg(args, 'active', active);
   
-  const deployHash = await callContract('update_plan_status', args, csprToMotes(3));
+  const deployHash = await callContract('update_plan_status', args, csprToMotes(3), network);
   
   return deployHash;
 }
@@ -114,7 +120,8 @@ export async function updatePlanStatus(
 export async function recordPayment(
   payerAddress: string,
   productId: string | null,
-  subscriptionPlanId: string | null
+  subscriptionPlanId: string | null,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   const publicKey = PublicKey.fromHex(payerAddress);
   const payerKey = Key.createByType(
@@ -125,7 +132,7 @@ export async function recordPayment(
   const argsMap: Record<string, CLValue> = {
     payer: CLValue.newCLKey(payerKey)
   };
-  
+
 
   if (productId) {
     argsMap.product_id = CLValue.newCLOption(CLValue.newCLString(productId));
@@ -141,7 +148,7 @@ export async function recordPayment(
   
   const args = Args.fromMap(argsMap);
   
-  const deployHash = await callContract('record_payment', args);
+  const deployHash = await callContract('record_payment', args, csprToMotes(5), network);
   
   return deployHash;
 }
@@ -150,7 +157,8 @@ export async function createSubscription(
   subscriptionId: string,
   merchantId: string,
   subscriberAddress: string,
-  planId: string
+  planId: string,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<string> {
   const publicKey = PublicKey.fromHex(subscriberAddress);
   const subscriberKey = Key.createByType(
@@ -165,7 +173,7 @@ export async function createSubscription(
     plan_id: CLValue.newCLString(planId)
   });
   
-  const deployHash = await callContract('create_subscription', args, csprToMotes(5));
+  const deployHash = await callContract('create_subscription', args, csprToMotes(5), network);
   
   return deployHash;
 }
@@ -183,9 +191,9 @@ export async function waitForDeployCompletion(deployHash: string): Promise<any> 
   return waitForDeploy(deployHash);
 }
 
-export async function unpauseContract(): Promise<string> {
+export async function unpauseContract(network: 'testnet' | 'mainnet' = 'testnet'): Promise<string> {
   const args = Args.fromMap({});
-  const deployHash = await callContract('unpause_contract', args, csprToMotes(2));
+  const deployHash = await callContract('unpause_contract', args, csprToMotes(2), network);
   
   return deployHash;
 }
