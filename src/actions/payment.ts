@@ -497,7 +497,7 @@ async function searchTransferByMemo(
     let data;
     try {
       data = JSON.parse(responseText);
-    } catch (err) {
+    } catch {
       console.error(`[searchTransferByMemo] ❌ Failed to parse JSON response`);
       console.error(`[searchTransferByMemo] Response body:`, responseText.slice(0, 500));
       return { found: false };

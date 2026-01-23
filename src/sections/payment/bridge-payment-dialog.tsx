@@ -135,9 +135,7 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
   }, [pollingInterval]);
 
   useEffect(() => {
-    if (!selectedCurrency || !step || step !== 'enter_amount') return;
-
-    let timeoutId: NodeJS.Timeout;
+    if (!selectedCurrency || !step || step !== 'enter_amount') return undefined;
 
     const updateRateData = async () => {
       const rangeResult = await getRange(selectedCurrency, isFixedRate);
@@ -149,12 +147,10 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
       }
     };
 
-    timeoutId = setTimeout(updateRateData, 300);
+    const timeoutId = setTimeout(updateRateData, 300);
 
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [isFixedRate]);
+    return () => clearTimeout(timeoutId);
+  }, [isFixedRate, amount, getEstimate, getRange, selectedCurrency, step]);
 
   const handleSelectCurrency = useCallback(
     async (currency: PopularCurrency) => {
@@ -243,7 +239,7 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
     }, 10000);
 
     setPollingInterval(interval);
-  }, [selectedCurrency, amount, minAmount, range, paylink.wallet_address, createExchange, checkExchangeStatus, onSuccess]);
+  }, [selectedCurrency, amount, minAmount, range, paylink.wallet_address, createExchange, checkExchangeStatus, onSuccess, isFixedRate]);
 
   const handleCopyAddress = useCallback(() => {
     if (exchange?.addressFrom) {
