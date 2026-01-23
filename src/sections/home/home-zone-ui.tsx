@@ -74,7 +74,7 @@ export function HomeZoneUI({ sx, ...other }: BoxProps) {
       <Box
         component="img"
         alt="CasPay GitHub"
-        src={`${CONFIG.assetsDir}/assets/images/home/zone-landing.webp`}
+        src={`${CONFIG.assetsDir}/assets/images/home/github-contributing.png`}
         sx={[
           (theme) => ({
             width: 720,
@@ -91,7 +91,7 @@ export function HomeZoneUI({ sx, ...other }: BoxProps) {
           variant="contained"
           target="_blank"
           rel="noopener noreferrer"
-          href="https://github.com/caspay/caspay"
+          href="https://github.com/dmrdvn/caspay"
           endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}
           sx={{
             color: 'grey.800',

@@ -75,7 +75,17 @@ export function MainLayout({
           <NavMobile data={navData} open={open} onClose={onClose} />
 
           {/** @slot Logo */}
-          <Logo isSingle={false} />
+          <Logo 
+            isSingle={false} 
+            sx={{
+              width: { xs: 120, sm: 140 },
+              height: { xs: 35, sm: 40 },
+              '& img': {
+                maxWidth: '100%',
+                maxHeight: '100%',
+              }
+            }} 
+          />
         </>
       ),
       rightArea: (
