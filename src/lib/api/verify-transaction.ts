@@ -22,44 +22,63 @@ export interface TransactionVerification {
   error?: string;
 }
 
-// Casper RPC endpoint (testnet or mainnet based on env)
-const CASPER_NODE_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://node.testnet.cspr.cloud/rpc';
+const NETWORK_NAME = process.env.NEXT_PUBLIC_NETWORK || 'casper-test';
+const IS_MAINNET = NETWORK_NAME === 'casper';
+
+const NOWNODES_RPC_URL_MAINNET = process.env.NEXT_PUBLIC_RPC_URL_MAINNET!;
+const CSPR_CLOUD_RPC_URL_TESTNET = process.env.NEXT_PUBLIC_RPC_URL!;
+const NOWNODES_API_KEY = process.env.NOWNODES_API_KEY;
+const FALLBACK_RPC_URL_TESTNET = process.env.FALLBACK_RPC_URL_TESTNET || 'https://node.testnet.cspr.cloud/rpc';
+const FALLBACK_RPC_URL_MAINNET = process.env.FALLBACK_RPC_URL_MAINNET || 'https://node.mainnet.cspr.cloud/rpc';
 const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
 
-// Lazy initialization to avoid constructor error
 let casperClient: RpcClient | null = null;
+let fallbackClient: RpcClient | null = null;
+
 function getCasperClient(): RpcClient {
   if (!casperClient) {
-    const handler = new HttpHandler(CASPER_NODE_URL);
-    if (CSPR_CLOUD_API_KEY) {
+    const primaryUrl = IS_MAINNET ? NOWNODES_RPC_URL_MAINNET : CSPR_CLOUD_RPC_URL_TESTNET;
+    const handler = new HttpHandler(primaryUrl);
+    if (IS_MAINNET && NOWNODES_API_KEY) {
+      handler.setCustomHeaders({
+        'api-key': NOWNODES_API_KEY
+      });
+    }
+    else if (!IS_MAINNET && CSPR_CLOUD_API_KEY) {
       handler.setCustomHeaders({
         'Authorization': CSPR_CLOUD_API_KEY
       });
     }
+    
     casperClient = new RpcClient(handler);
   }
   return casperClient;
 }
 
-/**
- * Verify a Casper transfer transaction
- * 
- * MOCK MODE: For testing without blockchain
- * Set MOCK_TRANSACTION_VERIFICATION=true to bypass blockchain checks
- * 
- * FAKE HASH DETECTION: Automatically detects demo/test hashes
- * Patterns: demo_tx_*, mock_tx_*, test_tx_*
- */
+function getFallbackClient(): RpcClient {
+  if (!fallbackClient) {
+    const fallbackUrl = IS_MAINNET ? FALLBACK_RPC_URL_MAINNET : FALLBACK_RPC_URL_TESTNET;
+    const handler = new HttpHandler(fallbackUrl);
+    
+    if (CSPR_CLOUD_API_KEY) {
+      handler.setCustomHeaders({
+        'Authorization': CSPR_CLOUD_API_KEY
+      });
+    }
+    
+    fallbackClient = new RpcClient(handler);
+  }
+  return fallbackClient;
+}
+
 export async function verifyTransaction(
   deployHash: string,
   expectedRecipient: string,
-  expectedAmount: number, // in CSPR (will convert to motes)
-  senderAddress?: string // Optional: sender address from user input (used in mock mode)
+  expectedAmount: number,
+  senderAddress?: string 
 ): Promise<TransactionVerification> {
-  // MOCK MODE: Skip blockchain verification for testing
   const mockMode = process.env.MOCK_TRANSACTION_VERIFICATION === 'true';
-  
-  // AUTO-DETECT FAKE HASH: Check if hash is a demo/test hash
+
   const isFakeHash = /^(demo_tx_|mock_tx_|test_tx_)/i.test(deployHash);
   
   if (mockMode || isFakeHash) {
@@ -72,21 +91,27 @@ export async function verifyTransaction(
       reason: mockMode ? 'MOCK_MODE_ENABLED' : 'FAKE_HASH_DETECTED'
     });
     
-    // Return mock successful verification with user-provided sender
     return {
       valid: true,
       deployHash,
       amount: Math.floor(expectedAmount * 1e9), // CSPR to motes
       recipient: expectedRecipient,
-      sender: senderAddress || '', // Use provided sender or fallback
+      sender: senderAddress || '',
       timestamp: new Date().toISOString()
     };
   }
 
   try {
-    // Fetch deploy from Casper network
     const client = getCasperClient();
-    const result = await client.getDeploy(deployHash);
+    let result;
+    
+    try {
+      result = await client.getDeploy(deployHash);
+    } catch (primaryError: any) {
+      console.warn('[verifyTransaction] NowNodes failed, trying fallback...', primaryError.message);
+      const fallback = getFallbackClient();
+      result = await fallback.getDeploy(deployHash);
+    }
     
     const { deploy } = result;
     const executionResult = result.executionResultsV1?.[0];
@@ -99,7 +124,6 @@ export async function verifyTransaction(
       };
     }
 
-    // Check if transaction succeeded
     const isSuccess = executionResult.result && 'Success' in executionResult.result;
     if (!isSuccess) {
       return {
@@ -109,23 +133,19 @@ export async function verifyTransaction(
       };
     }
 
-    // Parse transfer details
     const { session } = deploy;
     
-    // Handle different transfer types
     let transferAmount = 0;
     let transferRecipient = '';
     let sender = '';
 
     if (session.transfer) {
-      // Native CSPR transfer
       const { transfer } = session;
       transferAmount = Number(transfer.args.getByName('amount')?.ui512?.getValue() || 0);
       transferRecipient = transfer.args.getByName('target')?.key?.toPrefixedString() || '';
       sender = deploy.header.account?.toHex() || '';
     } else if (session.storedContractByHash || session.storedContractByName) {
-      // CEP-18 token transfer
-      // TODO: Parse CEP-18 transfer args when supporting tokens
+ 
       return {
         valid: false,
         deployHash,
@@ -139,7 +159,6 @@ export async function verifyTransaction(
       };
     }
 
-    // Validate recipient
     const recipientMatch = transferRecipient.toLowerCase() === expectedRecipient.toLowerCase();
     if (!recipientMatch) {
       return {
@@ -159,7 +178,6 @@ export async function verifyTransaction(
       };
     }
 
-    // All checks passed
     return {
       valid: true,
       deployHash,
@@ -180,10 +198,6 @@ export async function verifyTransaction(
   }
 }
 
-/**
- * Check if transaction has already been processed
- * Prevents duplicate payment records
- */
 export async function checkTransactionProcessed(
   deployHash: string,
   supabase: any

@@ -15,13 +15,16 @@ import Typography from '@mui/material/Typography';
 import { fCurrency } from 'src/utils/format-number';
 
 import type { PayLinkWithProduct } from 'src/types/paylink';
+import type { SimpleSwapExchange } from 'src/types/simpleswap';
 
 import { usePaymentMutations } from 'src/hooks/use-payment';
 
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 
-import { PaymentDialog } from './payment-dialog';
+import { PaymentDialog } from '../payment-dialog';
+import { BridgePaymentDialog } from '../bridge-payment-dialog';
+import { FiatPaymentDialog } from '../fiat-payment-dialog';
 
 type Props = {
   paylink: PayLinkWithProduct | null;
@@ -44,10 +47,11 @@ type PartialPayment = {
 };
 
 export function PaymentView({ paylink }: Props) {
-  const { createPendingPayment, cancelPendingPayment } = usePaymentMutations();
-  
+  const { createPendingPayment, cancelPendingPayment, recordBridgePayment } = usePaymentMutations();
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bridgeDialogOpen, setBridgeDialogOpen] = useState(false);
+  const [fiatDialogOpen, setFiatDialogOpen] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [countdown, setCountdown] = useState(600); // 10 minutes
@@ -234,21 +238,68 @@ export function PaymentView({ paylink }: Props) {
   };
 
   const handleCancelPayment = async () => {
-    if (!pendingPayment) return;
+    if (!pendingPayment) {
+      handleCloseDialog();
+      return;
+    }
+    const paymentId = pendingPayment.id;
+
+    handleCloseDialog();
 
     try {
-      const result = await cancelPendingPayment(pendingPayment.id);
+      const result = await cancelPendingPayment(paymentId);
       
       if (result.success) {
         console.log('[handleCancelPayment] Payment cancelled successfully');
       } else {
         console.error('[handleCancelPayment] Cancel failed:', result.error);
       }
-
-      handleCloseDialog();
     } catch (err) {
       console.error('[handleCancelPayment] Error:', err);
-      handleCloseDialog();
+    }
+  };
+
+  const handleBridgeSuccess = async (exchange: SimpleSwapExchange) => {
+    if (!paylink) return;
+
+    try {
+  
+      const fromCurrency = exchange.currencyFrom ? exchange.currencyFrom.toUpperCase() : '';
+      const fromAmount = exchange.amountFrom || '';
+      const fromAddress = exchange.addressFrom || '';
+
+
+      const result = await recordBridgePayment({
+        paylinkId: paylink.id,
+        merchantId: paylink.merchant_id,
+        productId: paylink.product_id,
+        amount: parseFloat(exchange.amountTo),
+        currency: 'CSPR',
+        exchangeId: exchange.id,
+        csprTxHash: exchange.txTo || null,
+        fromCurrency,
+        fromAmount,
+        fromAddress,
+      });
+
+      if (result.success) {
+        console.log('[handleBridgeSuccess] Bridge payment recorded successfully!', {
+          paymentId: result.data?.paymentId,
+        });
+        
+        if (paylink.custom_success_url) {
+          console.log('[handleBridgeSuccess] Redirecting to custom success URL in 3s:', paylink.custom_success_url);
+          setTimeout(() => {
+            window.location.href = paylink.custom_success_url!;
+          }, 3000);
+        } else {
+          console.log('[handleBridgeSuccess] No custom success URL configured, staying on page');
+        }
+      } else {
+        console.error('[handleBridgeSuccess] Failed to record payment:', result.error);
+      }
+    } catch (err) {
+      console.error('[handleBridgeSuccess] Exception occurred:', err);
     }
   };
 
@@ -283,9 +334,9 @@ export function PaymentView({ paylink }: Props) {
           </Stack>
 
           <Chip
-            label="Testnet Mode"
+            label={paylink.network === 'mainnet' ? 'Mainnet Mode' : 'Testnet Mode'}
             size="small"
-            color="warning"
+            color={paylink.network === 'mainnet' ? 'success' : 'warning'}
             variant="outlined"
             sx={{
               fontWeight: 600,
@@ -374,35 +425,24 @@ export function PaymentView({ paylink }: Props) {
               </Typography>
             </Alert>
           )}
-
+    
           {paylink.payment_methods.includes('wallet') && (
-            <Button
-              fullWidth
-              size="large"
-              variant="contained"
-              disabled={dialogOpen}
-              startIcon={<Iconify icon="solar:wallet-bold" />}
-              onClick={handleStartPayment}
-            >
-              {paylink.custom_button_text || 'Pay with Crypto'}
-            </Button>
-          )}
-
-          {paylink.payment_methods.includes('fiat') && (
             <Box sx={{ position: 'relative' }}>
               <Button
                 fullWidth
                 size="large"
-                variant="outlined"
-                disabled
-                startIcon={<Iconify icon="solar:dollar-bold" />}
+                variant="contained"
+                disabled={dialogOpen}
+                startIcon={<Iconify icon="solar:wallet-bold" />}
+                onClick={handleStartPayment}
               >
-                Pay with Card
+                {paylink.custom_button_text || 'Pay Now'}
               </Button>
               <Chip
-                label="Coming Soon"
+                label="~10 seconds"
                 size="small"
-                color="warning"
+                color="success"
+                variant="filled"
                 sx={{
                   position: 'absolute',
                   top: -8,
@@ -412,10 +452,89 @@ export function PaymentView({ paylink }: Props) {
                   height: 20,
                   borderRadius: 1,
                   boxShadow: 1,
+                  bgcolor: 'success.main',
+                  color: 'success.contrastText',
                 }}
               />
             </Box>
           )}
+
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: paylink.payment_methods.filter((m) => m === 'fiat' || (m === 'bridge' && paylink.network === 'mainnet')).length > 1 ? 'repeat(2, 1fr)' : '1fr',
+              },
+              gap: 2,
+            }}
+          >
+            {paylink.payment_methods.includes('fiat') && (
+              <Box sx={{ position: 'relative' }}>
+                <Button
+                  fullWidth
+                  size="large"
+                  variant="outlined"
+                  disabled={dialogOpen || bridgeDialogOpen || fiatDialogOpen}
+                  startIcon={<Iconify icon={'solar:card-bold' as any} />}
+                  onClick={() => setFiatDialogOpen(true)}
+                >
+                  Pay with Card
+                </Button>
+                <Chip
+                  label="Coming Soon"
+                  size="small"
+                  color="warning"
+                  variant="filled"
+                  sx={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    fontWeight: 600,
+                    fontSize: '0.65rem',
+                    height: 20,
+                    borderRadius: 1,
+                    boxShadow: 1,
+                    bgcolor: 'warning.main',
+                    color: 'warning.contrastText',
+                  }}
+                />
+              </Box>
+            )}
+
+            {paylink.payment_methods.includes('bridge') && paylink.network === 'mainnet' && (
+              <Box sx={{ position: 'relative' }}>
+                <Button
+                  fullWidth
+                  size="large"
+                  variant="outlined"
+                  disabled={dialogOpen || bridgeDialogOpen}
+                  startIcon={<Iconify icon="solar:link-bold" />}
+                  onClick={() => setBridgeDialogOpen(true)}
+                >
+                  Pay with Bridge
+                </Button>
+                <Chip
+                  label="~1-2 minutes"
+                  size="small"
+                  color="info"
+                  variant="filled"
+                  sx={{
+                    position: 'absolute',
+                    top: -8,
+                    right: -8,
+                    fontWeight: 600,
+                    fontSize: '0.65rem',
+                    height: 20,
+                    borderRadius: 1,
+                    boxShadow: 1,
+                    bgcolor: 'info.main',
+                    color: 'info.contrastText',
+                  }}
+                />
+              </Box>
+            )}
+          </Box>
         </Stack>
 
         <Stack
@@ -443,6 +562,23 @@ export function PaymentView({ paylink }: Props) {
           onClose={handleCloseDialog}
           onCancel={handleCancelPayment}
           onCopyAddress={handleCopyAddress}
+        />
+      )}
+
+      {paylink && (
+        <BridgePaymentDialog
+          open={bridgeDialogOpen}
+          paylink={paylink}
+          onClose={() => setBridgeDialogOpen(false)}
+          onSuccess={handleBridgeSuccess}
+        />
+      )}
+
+      {paylink && (
+        <FiatPaymentDialog
+          open={fiatDialogOpen}
+          paylink={paylink}
+          onClose={() => setFiatDialogOpen(false)}
         />
       )}
     </Container>

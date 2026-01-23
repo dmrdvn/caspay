@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -24,7 +25,8 @@ import { Form, Field } from 'src/components/hook-form';
 
 const PayLinkFormSchema = z.object({
   wallet_address: z.string().optional(),
-  payment_methods: z.array(z.enum(['wallet', 'fiat'])).optional(),
+  payment_methods: z.array(z.enum(['wallet', 'fiat', 'bridge'])).optional(),
+  network: z.enum(['testnet', 'mainnet']).optional(),
   is_active: z.boolean(),
   expires_at: z.string().optional(),
   custom_success_url: z.string().url().optional().or(z.literal('')),
@@ -88,7 +90,8 @@ export function PayLinkEditForm({ paylink, merchantId }: Props) {
     resolver: zodResolver(PayLinkFormSchema),
     defaultValues: {
       wallet_address: paylink.wallet_address,
-      payment_methods: paylink.payment_methods as ('wallet' | 'fiat')[] | undefined,
+      payment_methods: paylink.payment_methods as ('wallet' | 'fiat' | 'bridge')[] | undefined,
+      network: paylink.network as 'testnet' | 'mainnet',
       is_active: paylink.is_active,
       expires_at: paylink.expires_at ? new Date(paylink.expires_at).toISOString().slice(0, 16) : '',
       custom_success_url: paylink.custom_success_url || '',
@@ -123,8 +126,16 @@ export function PayLinkEditForm({ paylink, merchantId }: Props) {
     },
   });
 
-  const { handleSubmit, watch } = methods;
+  const { handleSubmit, watch, setValue } = methods;
   const customSuccessUrl = watch('custom_success_url');
+  const selectedPaymentMethods = watch('payment_methods');
+  const selectedNetwork = watch('network');
+
+  useEffect(() => {
+    if (selectedPaymentMethods?.includes('bridge') && selectedNetwork === 'testnet') {
+      setValue('network', 'mainnet');
+    }
+  }, [selectedPaymentMethods, selectedNetwork, setValue]);
 
   const onSubmit = handleSubmit(async (data) => {
     try {
@@ -185,6 +196,7 @@ export function PayLinkEditForm({ paylink, merchantId }: Props) {
       await updatePayLink(paylink.id, {
         wallet_address: data.wallet_address,
         payment_methods: data.payment_methods,
+        network: data.network,
         is_active: data.is_active,
         expires_at: data.expires_at || undefined,
         custom_success_url: data.custom_success_url || undefined,
@@ -234,10 +246,36 @@ export function PayLinkEditForm({ paylink, merchantId }: Props) {
               label="Payment Methods"
               options={[
                 { label: 'Wallet (Crypto)', value: 'wallet' },
-                { label: 'Fiat (Credit Card)', value: 'fiat' },
+                { label: 'Fiat (Credit Card) - Coming Soon', value: 'fiat' },
+                { label: 'Multi-Chain Bridge', value: 'bridge' },
               ]}
-              helperText="Select allowed payment methods"
+              helperText="Select allowed payment methods. Wallet payments are fully functional, fiat integration coming soon."
+              row
+              sx={{ gap: 2, alignItems: 'center' }}
             />
+
+            <Alert severity="info" sx={{ py: 1 }}>
+              <Typography variant="caption">
+                <strong>Wallet Payment:</strong> Fully active - customers can pay with CSPR via Casper Wallet
+                <br />
+                <strong>Fiat Payment:</strong> Display option available, integration under development
+                <br />
+                <strong>Multi-Chain Bridge:</strong> Accept payments from other chains (BTC, ETH, USDC, etc.) - Mainnet only
+              </Typography>
+            </Alert>
+
+            <Field.Select name="network" label="Network">
+              <MenuItem value="testnet">Testnet</MenuItem>
+              <MenuItem value="mainnet">Mainnet</MenuItem>
+            </Field.Select>
+
+            {selectedPaymentMethods?.includes('bridge') && (
+              <Alert severity="warning" sx={{ py: 1 }}>
+                <Typography variant="caption">
+                  <strong>Important:</strong> Multi-Chain Bridge only works on Mainnet. If you select Testnet, bridge payment option will be hidden from customers.
+                </Typography>
+              </Alert>
+            )}
 
             <Field.DateTimePicker
               name="expires_at"

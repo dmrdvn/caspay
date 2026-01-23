@@ -42,7 +42,7 @@ export function PayLinkTableRow({ row, selected, onSelectRow, onDeleteSuccess }:
   
   const { deletePayLink } = usePayLinkMutations();
 
-  const publicUrl = `https://caspay.link/pay/${row.slug}`;
+  const publicUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/pay/${row.slug}`;
   
   const fulfillmentMetadata = row.metadata as FulfillmentMetadata | null;
   const fulfillmentType = fulfillmentMetadata?.fulfillment_type || 'none';
@@ -127,6 +127,15 @@ export function PayLinkTableRow({ row, selected, onSelectRow, onDeleteSuccess }:
               </Link>
             </Tooltip>
           </Box>
+        </TableCell>
+
+        <TableCell>
+          <Label 
+            variant="soft" 
+            color={row.network === 'mainnet' ? 'success' : 'warning'}
+          >
+            {row.network === 'mainnet' ? 'Mainnet' : 'Testnet'}
+          </Label>
         </TableCell>
 
         <TableCell>

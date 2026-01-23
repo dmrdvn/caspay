@@ -34,6 +34,7 @@ import { PayLinkTableRow } from 'src/sections/paylink/paylink-table-row';
 const TABLE_HEAD = [
   { id: 'product_name', label: 'Product', width: 180 },
   { id: 'slug', label: 'Link', width: 50 },
+  { id: 'network', label: 'Network', width: 80 },
   { id: 'status', label: 'Status', width: 30 },
   { id: 'fulfillment', label: 'Type', width: 50 },
   { id: 'usage', label: 'Usage', width: 30 },

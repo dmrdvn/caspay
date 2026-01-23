@@ -87,6 +87,7 @@ export async function createPayLink(
         wallet_address: input.wallet_address || merchant.wallet_address,
         fee_percentage: 0,
         payment_methods: input.payment_methods ?? ['wallet', 'fiat'],
+        network: input.network ?? 'testnet',
         expires_at: input.expires_at || null,
         max_uses: input.max_uses,
         custom_message: input.custom_message,
@@ -302,7 +303,7 @@ export async function trackPayLinkEvent(
     user_agent?: string;
     referer?: string;
     country?: string;
-    payment_method?: 'wallet' | 'fiat';
+    payment_method?: 'wallet' | 'fiat' | 'bridge';
     fiat_provider?: string;
     [key: string]: any;
   }
@@ -388,6 +389,8 @@ export async function getPayLinkStats(
       payments?.filter((p: any) => p.payment_source === 'paylink_wallet').length || 0;
     const fiatPayments =
       payments?.filter((p: any) => p.payment_source === 'paylink_fiat').length || 0;
+    const bridgePayments =
+      payments?.filter((p: any) => p.payment_source === 'paylink_bridge').length || 0;
 
     const lastPayment = payments?.[0];
 
@@ -402,6 +405,7 @@ export async function getPayLinkStats(
       payment_methods: {
         wallet: walletPayments,
         fiat: fiatPayments,
+        bridge: bridgePayments,
       },
       last_payment_at: lastPayment?.created_at || null,
     };

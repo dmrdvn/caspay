@@ -9,6 +9,7 @@ import {
   createPendingPayment as createPendingPaymentAction,
   cancelPendingPayment as cancelPendingPaymentAction,
   recordPayLinkPayment as recordPayLinkPaymentAction,
+  recordBridgePayment as recordBridgePaymentAction,
   verifyPendingPayments as verifyPendingPaymentsAction,
 } from 'src/actions/payment';
 
@@ -112,6 +113,29 @@ export function usePaymentMutations() {
     []
   );
 
+  const recordBridgePayment = useCallback(
+    async (input: {
+      paylinkId: string;
+      merchantId: string;
+      productId: string;
+      amount: number;
+      currency: string;
+      exchangeId: string;
+      csprTxHash: string | null;
+      fromCurrency: string;
+      fromAmount: string;
+      fromAddress: string;
+    }) => {
+      try {
+        return await recordBridgePaymentAction(input);
+      } catch (error) {
+        console.error('[recordBridgePayment] Error:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
   const verifyPendingPayments = useCallback(async () => {
     try {
       return await verifyPendingPaymentsAction();
@@ -126,9 +150,10 @@ export function usePaymentMutations() {
       createPendingPayment,
       cancelPendingPayment,
       recordPayLinkPayment,
+      recordBridgePayment,
       verifyPendingPayments,
     }),
-    [createPendingPayment, cancelPendingPayment, recordPayLinkPayment, verifyPendingPayments]
+    [createPendingPayment, cancelPendingPayment, recordPayLinkPayment, recordBridgePayment, verifyPendingPayments]
   );
 
   return memoizedValue;

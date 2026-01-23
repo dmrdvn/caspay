@@ -54,10 +54,19 @@ const BufferPolyfill = (() => {
 })();
 
 const PRIVATE_KEY_BASE64 = process.env.CASPAY_ADMIN_PRIVATE_KEY;
+const NOWNODES_API_KEY = process.env.NOWNODES_API_KEY;
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:7778';
-const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY; // For production
-const CONTRACT_PACKAGE_HASH = process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH;
+const RPC_URL_MAINNET = process.env.NEXT_PUBLIC_RPC_URL_MAINNET;
+const FALLBACK_RPC_URL_TESTNET = process.env.FALLBACK_RPC_URL_TESTNET || 'https://node.testnet.cspr.cloud/rpc';
+const FALLBACK_RPC_URL_MAINNET = process.env.FALLBACK_RPC_URL_MAINNET || 'https://node.mainnet.cspr.cloud/rpc';
+const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
+
 const NETWORK_NAME = process.env.NEXT_PUBLIC_NETWORK || 'casper-test';
+const IS_MAINNET = NETWORK_NAME === 'casper';
+
+const CONTRACT_PACKAGE_HASH = IS_MAINNET
+  ? process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH_MAINNET
+  : process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH_TESTNET || process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH;
 
 if (!PRIVATE_KEY_BASE64) {
   throw new Error('CASPAY_ADMIN_PRIVATE_KEY environment variable is required');
@@ -72,9 +81,15 @@ let privateKeyInstance: PrivateKey | null = null;
 
 function getRpcClient(): RpcClient {
   if (!rpcClientInstance) {
-    const rpcHandler = new HttpHandler(RPC_URL);
+    const primaryUrl = IS_MAINNET && RPC_URL_MAINNET ? RPC_URL_MAINNET : RPC_URL;
+    const rpcHandler = new HttpHandler(primaryUrl);
     
-    if (CSPR_CLOUD_API_KEY) {
+    if (IS_MAINNET && NOWNODES_API_KEY && RPC_URL_MAINNET) {
+      rpcHandler.setCustomHeaders({
+        'api-key': NOWNODES_API_KEY
+      });
+    }
+    else if (!IS_MAINNET && CSPR_CLOUD_API_KEY) {
       rpcHandler.setCustomHeaders({
         'Authorization': CSPR_CLOUD_API_KEY
       });
@@ -83,6 +98,19 @@ function getRpcClient(): RpcClient {
     rpcClientInstance = new RpcClient(rpcHandler);
   }
   return rpcClientInstance;
+}
+
+function getFallbackRpcClient(): RpcClient {
+  const fallbackUrl = IS_MAINNET ? FALLBACK_RPC_URL_MAINNET : FALLBACK_RPC_URL_TESTNET;
+  const fallbackHandler = new HttpHandler(fallbackUrl);
+  
+  if (CSPR_CLOUD_API_KEY) {
+    fallbackHandler.setCustomHeaders({
+      'Authorization': CSPR_CLOUD_API_KEY
+    });
+  }
+  
+  return new RpcClient(fallbackHandler);
 }
 
 async function getPrivateKey(): Promise<PrivateKey> {
@@ -131,11 +159,18 @@ export async function callContract(
     deploy.sign(privateKey);
 
     const rpcClient = getRpcClient();
-    const result = await rpcClient.putDeploy(deploy);
     
-    const deployHashHex = result.deployHash.toHex();
-    
-    return deployHashHex;
+    try {
+      const result = await rpcClient.putDeploy(deploy);
+      const deployHashHex = result.deployHash.toHex();
+      return deployHashHex;
+    } catch (primaryError: any) {
+      console.warn('[callContract] NowNodes failed, trying fallback...', primaryError.message);
+      const fallbackClient = getFallbackRpcClient();
+      const result = await fallbackClient.putDeploy(deploy);
+      const deployHashHex = result.deployHash.toHex();
+      return deployHashHex;
+    }
   } catch (error: any) {
     throw new Error(`Contract call failed: ${error.message}`);
   }
@@ -281,7 +316,25 @@ export async function waitForDeploy(
       }
     } catch (error: any) {
       if (!error.message.includes('not found')) {
-        throw error;
+        console.warn('[waitForDeploy] NowNodes error, trying fallback...');
+        try {
+          const fallbackClient = getFallbackRpcClient();
+          const result = await fallbackClient.getDeploy(deployHash);
+          
+          if (result.executionResultsV1 && result.executionResultsV1.length > 0) {
+            const execution = result.executionResultsV1[0];
+            
+            if (execution.result.success) {
+              return result;
+            } else if (execution.result.failure) {
+              throw new Error(`Deploy failed: ${JSON.stringify(execution.result.failure)}`);
+            }
+          }
+        } catch (fallbackError: any) {
+          if (!fallbackError.message.includes('not found')) {
+            throw fallbackError;
+          }
+        }
       }
     }
 

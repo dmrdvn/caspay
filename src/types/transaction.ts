@@ -21,7 +21,7 @@ export type TransactionItem = {
   invoice_number: string | null;
   invoice_url: string | null;
   paylink_id: string | null;
-  payment_source: 'sdk' | 'paylink_wallet' | 'paylink_fiat';
+  payment_source: 'sdk' | 'paylink_wallet' | 'paylink_fiat' | 'paylink_bridge';
   metadata: {
     product_name?: string;
     plan_name?: string;

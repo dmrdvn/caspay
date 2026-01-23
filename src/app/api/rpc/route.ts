@@ -1,12 +1,41 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-const CASPER_RPC_URLS = {
-  mainnet: process.env.NEXT_PUBLIC_RPC_URL_MAINNET || 'https://node.mainnet.cspr.cloud/rpc',
-  testnet: process.env.NEXT_PUBLIC_RPC_URL || 'https://node.testnet.cspr.cloud/rpc',
+const NOWNODES_MAINNET_URL = process.env.NEXT_PUBLIC_RPC_URL_MAINNET!;
+const CSPR_CLOUD_TESTNET_URL = process.env.NEXT_PUBLIC_RPC_URL!;
+const NOWNODES_API_KEY = process.env.NOWNODES_API_KEY;
+
+const FALLBACK_RPC_URLS = {
+  mainnet: process.env.FALLBACK_RPC_URL_MAINNET || 'https://node.mainnet.cspr.cloud/rpc',
+  testnet: process.env.FALLBACK_RPC_URL_TESTNET || 'https://node.testnet.cspr.cloud/rpc',
 };
 
 const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
+
+async function sendRpcRequest(
+  url: string, 
+  payload: any, 
+  useNowNodesAuth: boolean = false,
+  useFallbackAuth: boolean = false
+): Promise<Response> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (useNowNodesAuth && NOWNODES_API_KEY) {
+    headers['api-key'] = NOWNODES_API_KEY;
+  }
+
+  if (useFallbackAuth && CSPR_CLOUD_API_KEY) {
+    headers['Authorization'] = CSPR_CLOUD_API_KEY;
+  }
+
+  return fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,18 +56,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const rpcUrl = network === 'mainnet' 
-      ? CASPER_RPC_URLS.mainnet 
-      : CASPER_RPC_URLS.testnet;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // Add API key if available (for cspr.cloud)
-    if (CSPR_CLOUD_API_KEY) {
-      headers['Authorization'] = CSPR_CLOUD_API_KEY;
-    }
+    const isMainnet = network === 'mainnet';
+    const primaryRpcUrl = isMainnet ? NOWNODES_MAINNET_URL : CSPR_CLOUD_TESTNET_URL;
+    const fallbackRpcUrl = isMainnet ? FALLBACK_RPC_URLS.mainnet : FALLBACK_RPC_URLS.testnet;
 
     const rpcPayload = {
       jsonrpc: '2.0',
@@ -47,13 +67,14 @@ export async function POST(request: NextRequest) {
       id: Date.now(),
     };
 
-    const response = await fetch(rpcUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(rpcPayload),
-    });
+    let response = await sendRpcRequest(primaryRpcUrl, rpcPayload, isMainnet, !isMainnet);
+    let result = await response.json();
 
-    const result = await response.json();
+    if (result.error || !response.ok) {
+      console.warn('[RPC] Primary provider failed, trying fallback...', result.error);
+      response = await sendRpcRequest(fallbackRpcUrl, rpcPayload, false, true);
+      result = await response.json();
+    }
 
     if (result.error) {
       return NextResponse.json(

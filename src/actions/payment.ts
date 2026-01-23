@@ -73,6 +73,14 @@ export async function createPendingPayment(
   }>
 > {
   try {
+    const { data: paylink } = await supabase
+      .from('paylinks')
+      .select('network')
+      .eq('id', input.paylinkId)
+      .single();
+
+    const network = paylink?.network || 'testnet';
+
     let uniquePaymentId: number;
     let isUnique = false;
     let attempts = 0;
@@ -117,6 +125,7 @@ export async function createPendingPayment(
           unique_payment_id: uniquePaymentId!.toString(),
           expected_recipient: input.walletAddress,
           expires_at: expiresAt,
+          network,
         },
       })
       .select()
@@ -174,6 +183,94 @@ export async function cancelPendingPayment(paymentId: string): Promise<ActionRes
   }
 }
 
+export async function recordBridgePayment(input: {
+  paylinkId: string;
+  merchantId: string;
+  productId: string;
+  amount: number;
+  currency: string;
+  exchangeId: string;
+  csprTxHash: string | null;
+  fromCurrency: string;
+  fromAmount: string;
+  fromAddress: string;
+}): Promise<ActionResponse<{ paymentId: string }>> {
+  try {
+    const { data: paylink } = await supabase
+      .from('paylinks')
+      .select('network')
+      .eq('id', input.paylinkId)
+      .single();
+
+    const network = paylink?.network || 'mainnet';
+ 
+    const paymentData = {
+      merchant_id: input.merchantId,
+      paylink_id: input.paylinkId,
+      product_id: input.productId,
+      status: input.csprTxHash ? 'confirmed' : 'pending',
+      amount: input.amount,
+      token: input.currency,
+      payer_address: input.fromAddress,
+      transaction_hash: input.csprTxHash || `bridge-${input.exchangeId}`,
+      payment_source: 'paylink_bridge',
+      payment_type: 'product',
+      block_timestamp: new Date().toISOString(),
+      metadata: {
+        exchange_id: input.exchangeId,
+        from_currency: input.fromCurrency,
+        from_amount: input.fromAmount,
+        from_address: input.fromAddress,
+        network,
+      },
+    };
+
+    const { data: payment, error } = await supabase
+      .from('payments')
+      .insert(paymentData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[recordBridgePayment] ❌ Insert error:', error);
+      return { success: false, error: error.message };
+    }
+
+    const { error: usageError } = await supabase.rpc('increment_paylink_usage', {
+      paylink_id: input.paylinkId,
+    });
+
+    if (usageError) {
+      console.error('[recordBridgePayment] Usage increment error:', usageError);
+    } else {
+      console.log('[recordBridgePayment] PayLink usage incremented');
+    }
+
+    console.log('[recordBridgePayment] 📊 Recording analytics...');
+    const { error: analyticsError } = await supabase.from('paylink_analytics').insert({
+      paylink_id: input.paylinkId,
+      event_type: 'payment_completed',
+      payment_method: 'bridge',
+    });
+
+    if (analyticsError) {
+      console.error('[recordBridgePayment] Analytics error:', analyticsError);
+    } else {
+      console.log('[recordBridgePayment] Analytics recorded');
+    }
+
+    console.log('[recordBridgePayment] Bridge payment recorded successfully! Payment ID:', payment.id);
+
+    return {
+      success: true,
+      data: { paymentId: payment.id },
+    };
+  } catch (err: any) {
+    console.error('[recordBridgePayment] Exception:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 export async function verifyPendingPayments(): Promise<{
   success: boolean;
   summary?: {
@@ -192,7 +289,7 @@ export async function verifyPendingPayments(): Promise<{
     
     const { data: pendingPayments, error } = await supabaseAdmin
       .from('payments')
-      .select('*')
+      .select('*, paylink:paylinks(network)')
       .eq('status', 'pending')
       .eq('payment_source', 'paylink_wallet')
       .not('metadata->expires_at', 'is', null);
@@ -214,6 +311,8 @@ export async function verifyPendingPayments(): Promise<{
         const metadata = payment.metadata as any;
         const expiresAt = new Date(metadata.expires_at);
         const now = new Date();
+        
+        const network = (payment.paylink as any)?.network || 'testnet';
 
         if (now > expiresAt) {
           console.log(`[verifyPendingPayments] Payment ${payment.id} expired`);
@@ -228,31 +327,22 @@ export async function verifyPendingPayments(): Promise<{
         const expectedRecipient = metadata.expected_recipient;
         const expectedAmount = payment.amount;
 
-        console.log(`[verifyPendingPayments] Checking payment ${payment.id} with unique ID: ${uniqueId}`);
-
         const searchResult = await searchTransferByMemo(
           uniqueId,
           expectedRecipient,
           expectedAmount,
-          payment.created_at
+          payment.created_at,
+          network
         );
 
         if (searchResult.found && searchResult.transfers) {
-          console.log(`[verifyPendingPayments] ✅ Found ${searchResult.transfers.length} matching transfers for payment ${payment.id}`);
-          console.log(`[verifyPendingPayments] Payment details:`, {
-            paymentId: payment.id,
-            uniqueId,
-            expectedAmount,
-            expectedRecipient: expectedRecipient.slice(0, 20) + '...',
-          });
-          
+        
           const existingHashes = (metadata.partial_payments || []).map((p: any) => p.hash);
           const newTransfers = searchResult.transfers.filter(
             (t) => !existingHashes.includes(t.hash)
           );
 
-          console.log(`[verifyPendingPayments] Existing transfers: ${existingHashes.length}, New transfers: ${newTransfers.length}`);
-
+       
           if (newTransfers.length === 0) {
             console.log(`[verifyPendingPayments] No new transfers, payment ${payment.id} remains pending`);
             return { id: payment.id, result: 'pending' };
@@ -266,16 +356,7 @@ export async function verifyPendingPayments(): Promise<{
           if (totalReceived >= expectedAmount) {
             const latestTransfer = newTransfers[newTransfers.length - 1];
 
-            console.log(`[verifyPendingPayments] ✅ Payment ${payment.id} FULLY PAID! Marking as confirmed...`);
-            console.log(`[verifyPendingPayments] Latest transfer details:`, {
-              hash: latestTransfer.hash,
-              sender: latestTransfer.sender.slice(0, 20) + '...',
-              amount: latestTransfer.amount,
-              blockHeight: latestTransfer.blockHeight,
-            });
 
-            console.log(`[verifyPendingPayments] 📝 Updating Supabase: payment ${payment.id} -> confirmed`);
-            
             const { error: updateError } = await supabaseAdmin
               .from('payments')
               .update({
@@ -296,31 +377,26 @@ export async function verifyPendingPayments(): Promise<{
               .eq('status', 'pending');
 
             if (updateError) {
-              console.error(`[verifyPendingPayments] ❌ Supabase update failed for payment ${payment.id}:`, updateError);
+
               throw updateError;
             }
 
-            console.log(`[verifyPendingPayments] ✅ Supabase updated successfully! Payment ${payment.id} is now CONFIRMED`);
-
-            console.log(`[verifyPendingPayments] 📊 Incrementing PayLink usage for paylink_id: ${payment.paylink_id}`);
-            
+     
             const { error: rpcError } = await supabaseAdmin.rpc('increment_paylink_usage', {
               paylink_id: payment.paylink_id,
             });
 
             if (rpcError) {
-              console.error(`[verifyPendingPayments] ⚠️ Failed to increment PayLink usage:`, rpcError);
+              console.error(`[verifyPendingPayments] Failed to increment PayLink usage:`, rpcError);
             } else {
-              console.log(`[verifyPendingPayments] ✅ PayLink usage incremented successfully`);
+              console.log(`[verifyPendingPayments] PayLink usage incremented successfully`);
             }
 
             return { id: payment.id, result: 'confirmed' };
           } else {
             const latestTransfer = newTransfers[newTransfers.length - 1];
 
-            console.log(`[verifyPendingPayments] ⚠️ PARTIAL payment for ${payment.id}: ${totalReceived}/${expectedAmount} CSPR`);
-            console.log(`[verifyPendingPayments] 📝 Updating Supabase with partial payment info...`);
-
+        
             const { error: updateError } = await supabaseAdmin.from('payments').update({
               transaction_hash: latestTransfer.hash,
               payer_address: latestTransfer.sender,
@@ -335,9 +411,9 @@ export async function verifyPendingPayments(): Promise<{
             }).eq('id', payment.id);
 
             if (updateError) {
-              console.error(`[verifyPendingPayments] ❌ Partial payment update failed:`, updateError);
+              console.error(`[verifyPendingPayments] Partial payment update failed:`, updateError);
             } else {
-              console.log(`[verifyPendingPayments] ✅ Partial payment info saved to Supabase`);
+              console.log(`[verifyPendingPayments] Partial payment info saved to Supabase`);
             }
 
             return { id: payment.id, result: 'partial' };
@@ -370,7 +446,8 @@ async function searchTransferByMemo(
   uniqueId: string,
   recipientAddress: string,
   expectedAmount: number,
-  createdAt: string
+  createdAt: string,
+  network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<{
   found: boolean;
   transfers?: Array<{
@@ -387,7 +464,11 @@ async function searchTransferByMemo(
     const paymentCreated = new Date(createdAt);
     const searchFromTime = new Date(paymentCreated.getTime() - 5 * 60 * 1000);
 
-    console.log(`[searchTransferByMemo] 🔍 Searching for transfer ID: ${uniqueId} to ${recipientAddress.slice(0, 10)}...`);
+    const apiBaseUrl = network === 'mainnet' 
+      ? 'https://api.cspr.cloud'
+      : 'https://api.testnet.cspr.cloud';
+
+    console.log(`[searchTransferByMemo] 🔍 Searching on ${network.toUpperCase()} for transfer ID: ${uniqueId} to ${recipientAddress.slice(0, 10)}...`);
     console.log(`[searchTransferByMemo] Search parameters:`, {
       uniqueId,
       recipientAddress: recipientAddress.slice(0, 20) + '...',
@@ -395,10 +476,8 @@ async function searchTransferByMemo(
       searchFromTime: searchFromTime.toISOString(),
     });
 
-    console.log(`[searchTransferByMemo] 🌐 Calling CSPR.cloud API...`);
-
     const response = await fetch(
-      `https://api.testnet.cspr.cloud/accounts/${recipientAddress}/transfers?page_size=20&page_number=1&order_by=timestamp&order_direction=DESC`,
+      `${apiBaseUrl}/accounts/${recipientAddress}/transfers?page_size=20&page_number=1&order_by=timestamp&order_direction=DESC`,
       {
         headers: {
           Accept: 'application/json',
@@ -408,24 +487,30 @@ async function searchTransferByMemo(
     );
 
     if (!response.ok) {
-      console.error(`[searchTransferByMemo] ❌ API request failed: ${response.status} ${response.statusText}`);
       return { found: false };
     }
 
     console.log(`[searchTransferByMemo] ✅ API response received successfully`);
 
-    const data = await response.json();
+    const responseText = await response.text();
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (err) {
+      console.error(`[searchTransferByMemo] ❌ Failed to parse JSON response`);
+      console.error(`[searchTransferByMemo] Response body:`, responseText.slice(0, 500));
+      return { found: false };
+    }
     const transfers = data.data || [];
 
-    console.log(`[searchTransferByMemo] 📊 Found ${transfers.length} total transfers`);
-
+   
     const recentTransfers = transfers.filter((t: any) => {
       const transferTime = new Date(t.timestamp);
       return transferTime >= searchFromTime;
     });
 
-    console.log(`[searchTransferByMemo] 🕒 ${recentTransfers.length} recent transfers (after ${searchFromTime.toISOString()})`);
-
+    
     const matchingTransfers: Array<{
       amount: number;
       hash: string;
@@ -434,21 +519,11 @@ async function searchTransferByMemo(
       timestamp: string;
     }> = [];
 
-    console.log(`[searchTransferByMemo] 🔎 Checking each transfer for matching ID...`);
-
+   
     for (const transfer of recentTransfers) {
       if (transfer.id && transfer.id.toString() === uniqueId) {
         const amountInCSPR = parseFloat(transfer.amount) / 1_000_000_000;
 
-        console.log(`[searchTransferByMemo] ✅ MATCH FOUND!`);
-        console.log(`[searchTransferByMemo] Transfer details:`, {
-          transferId: transfer.id,
-          deployHash: transfer.deploy_hash,
-          amount: amountInCSPR + ' CSPR',
-          sender: transfer.initiator_account_hash?.slice(0, 20) + '...',
-          blockHeight: transfer.block_height,
-          timestamp: transfer.timestamp,
-        });
 
         if (amountInCSPR > 0) {
           matchingTransfers.push({
@@ -458,7 +533,7 @@ async function searchTransferByMemo(
             blockHeight: transfer.block_height,
             timestamp: transfer.timestamp,
           });
-          console.log(`[searchTransferByMemo] ✅ Transfer added to matching list (amount > 0)`);
+          
         } else {
           console.log(`[searchTransferByMemo] ⚠️ Transfer amount is 0, skipping...`);
         }
@@ -466,11 +541,9 @@ async function searchTransferByMemo(
     }
 
     if (matchingTransfers.length > 0) {
-      console.log(`[searchTransferByMemo] ✅ SUCCESS! Total matching transfers: ${matchingTransfers.length}`);
       return { found: true, transfers: matchingTransfers };
     }
 
-    console.log(`[searchTransferByMemo] ❌ No matching transfers found for ID: ${uniqueId}`);
     return { found: false };
   } catch (err) {
     console.error('[searchTransferByMemo] ❌ Exception occurred:', err);

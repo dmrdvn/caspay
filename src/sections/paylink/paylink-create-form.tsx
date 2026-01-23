@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,7 +28,8 @@ import type { FulfillmentMetadata } from 'src/types/paylink';
 const PayLinkFormSchema = z.object({
   product_id: z.string().min(1, { message: 'Product is required' }),
   wallet_address: z.string().optional(),
-  payment_methods: z.array(z.enum(['wallet', 'fiat'])).optional(),
+  payment_methods: z.array(z.enum(['wallet', 'fiat', 'bridge'])).optional(),
+  network: z.enum(['testnet', 'mainnet']).optional(),
   expires_at: z.string().optional(),
   custom_success_url: z.string().url().optional().or(z.literal('')),
   custom_message: z.string().optional(),
@@ -72,7 +74,6 @@ const PayLinkFormSchema = z.object({
 
 type PayLinkFormType = z.infer<typeof PayLinkFormSchema>;
 
-// ----------------------------------------------------------------------
 
 type Props = {
   merchantId: string;
@@ -89,7 +90,8 @@ export function PayLinkCreateForm({ merchantId }: Props) {
     defaultValues: {
       product_id: '',
       wallet_address: user?.publicKey || '',
-      payment_methods: ['wallet', 'fiat'],
+      payment_methods: ['wallet', 'fiat','bridge'],
+      network: 'testnet',
       expires_at: '',
       custom_success_url: '',
       custom_message: '',
@@ -123,9 +125,17 @@ export function PayLinkCreateForm({ merchantId }: Props) {
     },
   });
 
-  const { handleSubmit, watch } = methods;
+  const { handleSubmit, watch, setValue } = methods;
   const selectedFulfillmentType = watch('fulfillment_type');
   const customSuccessUrl = watch('custom_success_url');
+  const selectedPaymentMethods = watch('payment_methods');
+  const selectedNetwork = watch('network');
+
+  useEffect(() => {
+    if (selectedPaymentMethods?.includes('bridge') && selectedNetwork === 'testnet') {
+      setValue('network', 'mainnet');
+    }
+  }, [selectedPaymentMethods, selectedNetwork, setValue]);
 
   const onSubmit = handleSubmit(async (data) => {
     try {
@@ -190,6 +200,7 @@ export function PayLinkCreateForm({ merchantId }: Props) {
         product_id: data.product_id,
         wallet_address: data.wallet_address,
         payment_methods: data.payment_methods,
+        network: data.network,
         expires_at: data.expires_at,
         custom_success_url: data.custom_success_url,
         custom_message: data.custom_message,
@@ -246,8 +257,11 @@ export function PayLinkCreateForm({ merchantId }: Props) {
               options={[
                 { label: 'Wallet (Crypto)', value: 'wallet' },
                 { label: 'Fiat (Credit Card) - Coming Soon', value: 'fiat' },
+                { label: 'Multi-Chain Bridge', value: 'bridge' },
               ]}
               helperText="Select allowed payment methods. Wallet payments are fully functional, fiat integration coming soon."
+              row
+              sx={{ gap: 2, alignItems: 'center' }}
             />
 
             <Alert severity="info" sx={{ py: 1 }}>
@@ -255,8 +269,23 @@ export function PayLinkCreateForm({ merchantId }: Props) {
                 <strong>Wallet Payment:</strong> Fully active - customers can pay with CSPR via Casper Wallet
                 <br />
                 <strong>Fiat Payment:</strong> Display option available, integration under development
+                <br />
+                <strong>Multi-Chain Bridge:</strong> Accept payments from other chains (BTC, ETH, USDC, etc.) - Mainnet only
               </Typography>
             </Alert>
+
+            <Field.Select name="network" label="Network">
+              <MenuItem value="testnet">Testnet</MenuItem>
+              <MenuItem value="mainnet">Mainnet</MenuItem>
+            </Field.Select>
+
+            {selectedPaymentMethods?.includes('bridge') && (
+              <Alert severity="warning" sx={{ py: 1 }}>
+                <Typography variant="caption">
+                  <strong>Important:</strong> Multi-Chain Bridge only works on Mainnet. If you select Testnet, bridge payment option will be hidden from customers.
+                </Typography>
+              </Alert>
+            )}
 
             <Field.DateTimePicker
               name="expires_at"

@@ -9,7 +9,8 @@ export interface PayLink {
 
   wallet_address: string;
   fee_percentage: number;
-  payment_methods: ('wallet' | 'fiat')[];
+  payment_methods: ('wallet' | 'fiat' | 'bridge')[];
+  network?: 'testnet' | 'mainnet';
 
   is_active: boolean;
   expires_at: string | null;
@@ -31,7 +32,8 @@ export interface PayLinkCreateInput {
   product_id: string;
   wallet_address?: string;
   fee_percentage?: number;
-  payment_methods?: ('wallet' | 'fiat')[];
+  payment_methods?: ('wallet' | 'fiat' | 'bridge')[];
+  network?: 'testnet' | 'mainnet';
   expires_at?: string;
   max_uses?: number;
   custom_message?: string;
@@ -43,7 +45,8 @@ export interface PayLinkCreateInput {
 export interface PayLinkUpdateInput {
   wallet_address?: string;
   fee_percentage?: number;
-  payment_methods?: ('wallet' | 'fiat')[];
+  payment_methods?: ('wallet' | 'fiat' | 'bridge')[];
+  network?: 'testnet' | 'mainnet';
   is_active?: boolean;
   expires_at?: string;
   max_uses?: number;
@@ -80,7 +83,7 @@ export interface PayLinkAnalyticsEvent {
   user_agent: string | null;
   referer: string | null;
   country: string | null;
-  payment_method: 'wallet' | 'fiat' | null;
+  payment_method: 'wallet' | 'fiat' | 'bridge' | null;
   fiat_provider: string | null;
   metadata: Record<string, any> | null;
   created_at: string;
@@ -97,6 +100,7 @@ export interface PayLinkStats {
   payment_methods: {
     wallet: number;
     fiat: number;
+    bridge: number;
   };
   last_payment_at: string | null;
 }
