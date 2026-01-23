@@ -86,12 +86,73 @@ export function HomeMinimal({ sx, ...other }: BoxProps) {
           }),
         ]}
       >
-        <Box
-          component="img"
-          alt="Home chart"
-          src={`${CONFIG.assetsDir}/assets/images/home/home-chart.webp`}
-          sx={{ width: 720 }}
-        />
+        <Box sx={{ p: 3 }}>
+          <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+            CasPay in your dApp
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, mb: 2, color: 'text.secondary' }}>
+            Initialize the SDK and accept payments with a single function call.
+          </Typography>
+
+          <Box
+            sx={(theme) => ({
+              mt: 2,
+              borderRadius: 2,
+              overflow: 'hidden',
+              bgcolor: theme.vars.palette.grey['900'] || 'grey.900',
+              color: 'common.white',
+              border: `1px solid ${varAlpha(theme.vars.palette.grey['500Channel'], 0.24)}`,
+              fontFamily: 'monospace',
+            })}
+          >
+            <Box
+              sx={(theme) => ({
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 2,
+                py: 1,
+                bgcolor: varAlpha(theme.vars.palette.grey['800Channel'] || theme.vars.palette.grey['500Channel'], 0.9),
+                borderBottom: `1px solid ${varAlpha(theme.vars.palette.grey['500Channel'], 0.24)}`,
+              })}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ff5f57' }} />
+                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#febc2e' }} />
+                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#28c840' }} />
+              </Box>
+              <Typography variant="caption" sx={{ opacity: 0.72 }}>
+                dapp.tsx
+              </Typography>
+            </Box>
+
+            <Box
+              component="pre"
+              sx={{
+                m: 0,
+                p: 2,
+                fontSize: 12,
+                overflowX: 'auto',
+              }}
+            >
+              <code>{`import { CasPay } from '@caspay/sdk';
+
+const caspay = new CasPay({
+  apiKey: your_caspay_api_key,
+  merchantId: 'your_merchant_id',
+  walletAddress: 'your_wallet_address',
+  network: 'testnet',
+  baseUrl: 'https://caspay.link/api',
+});
+
+const result = await caspay.payments.makePayment({
+  productId: 'caspay_product_id',
+  amount: 10,
+  currency: 'CSPR',
+});`}</code>
+            </Box>
+          </Box>
+        </Box>
       </Box>
     </Stack>
   );
@@ -114,9 +175,9 @@ export function HomeMinimal({ sx, ...other }: BoxProps) {
 
         <Container sx={{ position: 'relative' }}>
           <Grid container columnSpacing={{ xs: 0, md: 8 }} sx={{ position: 'relative', zIndex: 9 }}>
-            <Grid size={{ xs: 12, md: 6, lg: 7 }}>{renderDescription()}</Grid>
+            <Grid size={{ xs: 12, md: 6, lg: 6 }}>{renderDescription()}</Grid>
 
-            <Grid sx={{ display: { xs: 'none', md: 'block' } }} size={{ md: 6, lg: 5 }}>
+            <Grid sx={{ display: { xs: 'none', md: 'block' } }} size={{ md: 6, lg: 6 }}>
               {renderImage()}
             </Grid>
           </Grid>

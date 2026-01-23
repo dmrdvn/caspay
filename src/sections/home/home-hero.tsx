@@ -11,6 +11,7 @@ import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { toast } from 'src/components/snackbar';
 
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
@@ -121,6 +122,17 @@ Secure, compliant, and developer-friendly payment gateway with subscription supp
   );
 
   
+
+  const handleCopyInstallCommand = () => {
+    navigator.clipboard.writeText('npm install @caspay/sdk')
+      .then(() => {
+        toast.success('Install command copied to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Failed to copy: ', err);
+        toast.error('Failed to copy command');
+      });
+  };
 
   const renderButtons = () => (
     <Box
@@ -275,7 +287,62 @@ Secure, compliant, and developer-friendly payment gateway with subscription supp
           </Stack>
 
           <m.div style={{ y: y4 }}>{renderButtons()}</m.div>
-          <m.div style={{ y: y5 }}>{renderIcons()}</m.div>
+
+          <Box
+            sx={(theme) => ({
+              px: 2,
+              py: 1,
+              borderRadius: 999,
+              display: 'inline-flex',
+              justifyContent: 'center',
+              textAlign: 'center',
+              alignItems: 'center',
+              gap:1,
+              bgcolor: theme.vars.palette.grey['900'] || 'grey.900',
+              color: 'common.white',
+              border: `0.5px solid ${theme.palette.divider}`,
+              fontFamily: 'monospace',
+              position: 'relative',
+              cursor: 'pointer',
+              '&:hover .copy-icon': {
+                opacity: 1,
+              },
+            })}
+            onClick={handleCopyInstallCommand}
+          >
+            <Box
+              component="img"
+              src={`${CONFIG.assetsDir}/logo/CasPay-Mini.png`}
+              alt="Caspay"
+              sx={{
+                width: 20,
+                height: 'auto',
+              }}
+            />
+            <Typography
+              component="code"
+              variant="caption"
+              sx={{ letterSpacing: 0.4, fontFamily: 'inherit', ml:.5 }}
+            >
+              npm install @caspay/sdk
+            </Typography>
+            <Box
+              className="copy-icon"
+              sx={{
+                opacity: 0,
+                transition: 'opacity 0.3s ease',
+                mt: .5,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyInstallCommand();
+              }}
+            >
+              <Iconify icon="solar:copy-bold" width={16} />
+            </Box>
+          </Box>
+
+          <Box sx={{ mt: 0 }}>{renderIcons()}</Box>
         </Container>
 
         <HeroBackground />
