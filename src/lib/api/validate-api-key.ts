@@ -64,19 +64,9 @@ export async function validatePublicApiKey(
     };
   }
 
-  // Reject test keys in production environment
-  if (apiKey.startsWith('cp_test_') && process.env.NODE_ENV === 'production') {
-    return {
-      error: 'Test API keys cannot be used in production',
-      code: 'TEST_KEY_IN_PRODUCTION',
-      status: 403
-    };
-  }
-
   try {
     const supabase = await createClient();
     
-    // Test keys stored in plaintext, production keys hashed
     const keyHash = hashApiKey(apiKey);
 
     // Query API key with merchant info
@@ -125,6 +115,27 @@ export async function validatePublicApiKey(
       return {
         error: 'Merchant account is not active',
         code: 'INACTIVE_MERCHANT',
+        status: 403
+      };
+    }
+
+    // Validate API key type matches merchant network
+    const isTestKey = apiKey.startsWith('cp_test_');
+    const isLiveKey = apiKey.startsWith('cp_live_');
+    const merchantNetwork = merchant.network || 'testnet';
+
+    if (isTestKey && merchantNetwork === 'mainnet') {
+      return {
+        error: 'Test API keys can only be used with testnet merchants',
+        code: 'INVALID_KEY',
+        status: 403
+      };
+    }
+
+    if (isLiveKey && merchantNetwork === 'testnet') {
+      return {
+        error: 'Live API keys can only be used with mainnet merchants',
+        code: 'INVALID_KEY',
         status: 403
       };
     }
