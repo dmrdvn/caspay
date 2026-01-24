@@ -1096,6 +1096,7 @@
 
         const subscriber = document.getElementById('subscriberAddress').value;
         const planId = document.getElementById('checkPlanId').value;
+        const network = document.getElementById('networkSelect').value || 'testnet';
 
         if (!subscriber) {
           alert('Please enter subscriber address');
@@ -1106,7 +1107,8 @@
 
         const result = await sdk.subscriptions.checkStatus({
           subscriberAddress: subscriber,
-          planId: planId || undefined
+          planId: planId || undefined,
+          network: network
         });
 
         displayResponse(result, result.success);
@@ -1141,7 +1143,11 @@
         title.textContent = 'Payment Successful!';
         subtitle.textContent = 'Your transaction has been submitted to the blockchain.';
         
-        const explorerUrl = `https://testnet.cspr.live/deploy/${result.transactionHash}`;
+        const network = document.getElementById('networkSelect').value || 'testnet';
+        const isMainnet = network === 'mainnet';
+        const explorerBaseUrl = isMainnet ? 'https://cspr.live' : 'https://testnet.cspr.live';
+        const explorerUrl = `${explorerBaseUrl}/deploy/${result.transactionHash}`;
+        const networkDisplay = isMainnet ? 'Casper Mainnet' : 'Casper Testnet';
         const shortHash = result.transactionHash ? 
           `${result.transactionHash.slice(0, 8)}...${result.transactionHash.slice(-8)}` : 'N/A';
         
@@ -1158,7 +1164,7 @@
           </div>
           <div class="modal-details-row">
             <span class="modal-details-label">Network</span>
-            <span class="modal-details-value">Casper Testnet</span>
+            <span class="modal-details-value">${networkDisplay}</span>
           </div>
         `;
       } else {

@@ -277,7 +277,8 @@ export default function DemoNext() {
         try {
             const result = await caspay.subscriptions.checkStatus({
                 subscriberAddress: data.subscriberAddress,
-                planId: data.planId || undefined
+                planId: data.planId || undefined,
+                network: network
             });
             displayResponse(result, result.success ? 'success' : 'error');
         } catch (error: any) {

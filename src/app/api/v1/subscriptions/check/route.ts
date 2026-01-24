@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
     const merchantId = searchParams.get('merchant_id');
     const subscriber = searchParams.get('subscriber');
     const planId = searchParams.get('plan_id');
+    const network = searchParams.get('network') as 'testnet' | 'mainnet' | null;
 
     // 4. Validate required params
     if (!merchantId || !subscriber) {
@@ -138,6 +139,46 @@ export async function GET(req: NextRequest) {
         {
           error: 'Invalid plan_id format',
           code: 'INVALID_PLAN_ID'
+        },
+        { 
+          status: 400,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
+      );
+    }
+
+    if (network && network !== 'testnet' && network !== 'mainnet') {
+      return NextResponse.json(
+        {
+          error: 'Invalid network. Must be testnet or mainnet',
+          code: 'INVALID_NETWORK'
+        },
+        { 
+          status: 400,
+          headers: {
+            ...rateLimitHeaders,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+          }
+        }
+      );
+    }
+
+    // 4.2 Validate network matches merchant network
+    const requestedNetwork = network || merchant.network || 'testnet';
+    const merchantNetwork = merchant.network || 'testnet';
+    
+    if (requestedNetwork !== merchantNetwork) {
+      return NextResponse.json(
+        {
+          error: `Network mismatch. Merchant is on ${merchantNetwork}, but ${requestedNetwork} was requested`,
+          code: 'NETWORK_MISMATCH'
         },
         { 
           status: 400,
