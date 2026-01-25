@@ -21,6 +21,7 @@ import { MerchantSaleByGender } from '../merchant-sale-by-gender';
 import { MerchantOrderTimeline } from '../merchant-order-timeline';
 import { MerchantCurrentBalance } from '../merchant-current-balance';
 import { MerchantSubscriptionActivity } from '../merchant-subscription-activity';
+import { MerchantVideoTutorials } from '../merchant-video-tutorials';
 
 // ----------------------------------------------------------------------
 
@@ -214,6 +215,10 @@ export function OverviewMerchantView() {
                   ]
             }
           />
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <MerchantVideoTutorials />
         </Grid>
       </Grid>
     </DashboardContent>
