@@ -29,9 +29,14 @@ const VIDEOS = [
     description: 'Test SDK in your dApp',
   },
   {
+    id: 'Wx287vjNqpo',
+    title: 'How to Create a Paylink',
+    description: 'Create payment links',
+  },
+  {
     id: 'ecBzGgIBsZ8',
     title: 'PayLink Test & Usage',
-    description: 'Create and share payment links',
+    description: 'Test and share payment links',
   },
 ];
 

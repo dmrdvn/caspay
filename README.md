@@ -262,6 +262,7 @@ Use the "Check Subscription" feature to query existing subscription status by me
 - **Create Merchant Account**: [https://youtu.be/esajmrQf0Ww](https://youtu.be/esajmrQf0Ww)
 - **Create Products & Subscription Plans**: [https://youtu.be/XEo5mDBgzjw](https://youtu.be/XEo5mDBgzjw)
 - **CasPay SDK Integration Test**: [https://youtu.be/-g05mAiyzN4](https://youtu.be/-g05mAiyzN4)
+- **How to Create a Paylink**: [https://youtu.be/Wx287vjNqpo](https://youtu.be/Wx287vjNqpo)
 - **PayLink Test & Usage**: [https://youtu.be/ecBzGgIBsZ8](https://youtu.be/ecBzGgIBsZ8)
 
 ## SDK & Contract Links
