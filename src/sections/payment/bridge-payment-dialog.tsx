@@ -80,6 +80,7 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
   const [rangesLoading, setRangesLoading] = useState(false);
   const [isFixedRate, setIsFixedRate] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isCreatingExchange, setIsCreatingExchange] = useState(false);
 
   const targetAmount = paylink.product.price;
 
@@ -91,6 +92,7 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
       setRequiredAmount(null);
       setMinAmount(null);
       setCurrencyRanges({});
+      setIsCreatingExchange(false);
       clearState();
       if (pollingInterval) {
         clearInterval(pollingInterval);
@@ -194,7 +196,7 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
   );
 
   const handleCreateExchange = useCallback(async () => {
-    if (!selectedCurrency || !amount) return;
+    if (!selectedCurrency || !amount || isCreatingExchange) return;
 
     const numAmount = parseFloat(amount);
     if (Number.isNaN(numAmount) || numAmount <= 0) {
@@ -206,6 +208,8 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
       return;
     }
 
+    setIsCreatingExchange(true);
+
     const result = await createExchange(
       selectedCurrency,
       amount,
@@ -214,10 +218,12 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
     );
 
     if (!result) {
+      setIsCreatingExchange(false);
       setStep('failed');
       return;
     }
 
+    setIsCreatingExchange(false);
     setStep('waiting_deposit');
 
     const interval = setInterval(async () => {
@@ -239,7 +245,7 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
     }, 10000);
 
     setPollingInterval(interval);
-  }, [selectedCurrency, amount, minAmount, range, paylink.wallet_address, createExchange, checkExchangeStatus, onSuccess, isFixedRate]);
+  }, [selectedCurrency, amount, minAmount, range, paylink.wallet_address, createExchange, checkExchangeStatus, onSuccess, isFixedRate, isCreatingExchange]);
 
   const handleCopyAddress = useCallback(() => {
     if (exchange?.addressFrom) {
@@ -484,7 +490,7 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
         size="large"
         variant="contained"
         disabled={
-          isLoading ||
+          isCreatingExchange ||
           !amount ||
           !estimate ||
           Boolean((() => {
@@ -496,9 +502,9 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
           })())
         }
         onClick={handleCreateExchange}
-        startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
+        startIcon={isCreatingExchange ? <CircularProgress size={20} color="inherit" /> : null}
       >
-        {isLoading ? 'Creating exchange...' : 'Continue'}
+        {isCreatingExchange ? 'Creating exchange...' : 'Continue'}
       </Button>
     </Stack>
   );
