@@ -222,12 +222,47 @@ Use the "Check Subscription" feature to query existing subscription status by me
 - Immutable subscription tracking
 - Real-time on-chain confirmation
 
+## Real-World Use Cases
+
+### 👉 PayLinks (One-Time Payments)
+
+- **Digital downloads** - PDF, software, design files, music, video, templates
+- **License keys** - Software, games, plugins, API keys
+- **Service access** - Online courses, webinars, private Discord/Telegram, consulting
+- **Coupons & vouchers** - Discount codes, gift cards, promo codes
+- **Event tickets** - Webinars, virtual conferences, workshops
+- **Content access** - Premium articles, videos, research reports
+- **Custom messages** - Donation thanks, order instructions, manual sales
+- **Donations & tips** - Project support, community funding
+
+### 👉 CasPay SDK (One-Time + Subscriptions)
+
+**Product (One-Time):**
+- **NFTs & blockchain assets** - Minting, marketplace sales, in-game items
+- **Gaming items** - Characters, skins, power-ups, currency packs
+- **Digital products** - E-books, templates, code, design assets
+- **Services** - One-time consulting, freelance work, audits
+
+**Subscription:**
+- **NFT memberships & dynamic NFTs** - Exclusive access, evolving NFTs
+- **Gaming subscriptions** - Battle pass, VIP, season pass, tournaments
+- **Content platforms** - Music, video, newsletters, courses
+- **SaaS & tools** - Analytics, trading bots, portfolio trackers, dev tools
+- **Community access** - Private groups, DAO membership, mentorship
+
 ## Documentation
 
 - **Live Demo**: [https://caspay.link](https://caspay.link)
 - **Documentation**: [https://docs.caspay.link](https://docs.caspay.link)
 - **API Reference**: [https://docs.caspay.link/api-reference](https://docs.caspay.link/api-reference)
 - **Integration Guide**: [https://docs.caspay.link/docs/sdk/javascript/](https://docs.caspay.link/docs/sdk/javascript/)
+
+### Video Tutorials
+
+- **Create Merchant Account**: [https://youtu.be/esajmrQf0Ww](https://youtu.be/esajmrQf0Ww)
+- **Create Products & Subscription Plans**: [https://youtu.be/XEo5mDBgzjw](https://youtu.be/XEo5mDBgzjw)
+- **CasPay SDK Integration Test**: [https://youtu.be/-g05mAiyzN4](https://youtu.be/-g05mAiyzN4)
+- **PayLink Test & Usage**: [https://youtu.be/ecBzGgIBsZ8](https://youtu.be/ecBzGgIBsZ8)
 
 ## SDK & Contract Links
 
