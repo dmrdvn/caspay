@@ -178,6 +178,47 @@ export default function DemoNext() {
     const displayResponse = (data: any, status: 'success' | 'error') => {
         setApiResponse(data);
         setResponseStatus(status);
+
+        if (data.transactionHash || data.payment?.transaction_hash) {
+            const txHash = data.transactionHash || data.payment?.transaction_hash;
+            const contractHash = network === 'mainnet' 
+                ? process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH_MAINNET
+                : process.env.NEXT_PUBLIC_CONTRACT_PACKAGE_HASH_TESTNET;
+            const explorerBase = network === 'mainnet' ? 'https://cspr.live' : 'https://testnet.cspr.live';
+            
+            toast.success(
+                <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Transaction Successful!</Typography>
+                    <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+                        TX: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+                    </Typography>
+                    <Typography variant="caption" sx={{ display: 'block', fontSize: '0.7rem', opacity: 0.8 }}>
+                        Data stored on CasPay contract
+                    </Typography>
+                    <Box sx={{ mt: 1, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        <a 
+                            href={`${explorerBase}/deploy/${txHash}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            style={{ fontSize: '0.7rem', color: '#00b8d9', textDecoration: 'none' }}
+                        >
+                            View Deploy →
+                        </a>
+                        {contractHash && (
+                            <a 
+                                href={`${explorerBase}/contract-package/${contractHash}`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                style={{ fontSize: '0.7rem', color: '#00b8d9', textDecoration: 'none', marginLeft: '8px' }}
+                            >
+                                View Contract →
+                            </a>
+                        )}
+                    </Box>
+                </Box>,
+                { duration: 8000 }
+            );
+        }
     };
 
     const onProductSubmit = productMethods.handleSubmit(async (data) => {

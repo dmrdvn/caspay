@@ -1151,6 +1151,12 @@
         const shortHash = result.transactionHash ? 
           `${result.transactionHash.slice(0, 8)}...${result.transactionHash.slice(-8)}` : 'N/A';
         
+        const contractHash = isMainnet 
+          ? '478742e6dfc690279198d10338c5031af98b0e1f86c84e6f5314c3d7b747f2f0'
+          : '8948983c771b919fa7776de54002834a857f7265c6722094728f2688a8c804c0';
+        const contractUrl = `${explorerBaseUrl}/contract-package/${contractHash}`;
+        const shortContractHash = `${contractHash.slice(0, 8)}...${contractHash.slice(-8)}`;
+        
         details.innerHTML = `
           <div class="modal-details-row">
             <span class="modal-details-label">Status</span>
@@ -1165,6 +1171,16 @@
           <div class="modal-details-row">
             <span class="modal-details-label">Network</span>
             <span class="modal-details-value">${networkDisplay}</span>
+          </div>
+          <div class="modal-details-row">
+            <span class="modal-details-label">Contract Package</span>
+            <span class="modal-details-value">
+              <a href="${contractUrl}" target="_blank">${shortContractHash}</a>
+            </span>
+          </div>
+          <div class="modal-details-row" style="border-top: 1px solid rgba(145, 158, 171, 0.12); padding-top: 12px; margin-top: 8px;">
+            <span class="modal-details-label" style="color: rgba(145, 158, 171, 0.8); font-size: 0.75rem;">✓ Data stored on-chain</span>
+            <span class="modal-details-value" style="color: rgba(145, 158, 171, 0.8); font-size: 0.75rem;">CasPay Contract</span>
           </div>
         `;
       } else {
