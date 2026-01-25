@@ -165,7 +165,7 @@ export function MerchantsPopover({
       onClose={onClose}
       slotProps={{
         arrow: { placement: 'top-left' },
-        paper: { sx: { mt: 0.5, ml: -1.55, width: 280 } },
+        paper: { sx: { mt: 0.5, ml: -1.55, width: 360 } },
       }}
     >
       <Scrollbar sx={{ maxHeight: 280 }}>

@@ -164,7 +164,7 @@ export function MerchantDetailsView({ id }: Props) {
           {[
             {
               label: 'Business Type',
-              value: merchant.business_type,
+              value: merchant.business_type ? merchant.business_type.charAt(0).toUpperCase() + merchant.business_type.slice(1) : '-',
               icon: <Iconify icon="solar:buildings-2-bold" />,
             },
             {
@@ -280,8 +280,11 @@ export function MerchantDetailsView({ id }: Props) {
               </Typography>
               {merchant.transaction_hash ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography
-                    variant="subtitle2"
+                  <Link
+                    href={`${merchant.network === 'mainnet' ? 'https://cspr.live' : 'https://testnet.cspr.live'}/deploy/${merchant.transaction_hash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    underline="hover"
                     sx={{
                       fontFamily: 'monospace',
                       fontSize: '0.875rem',
@@ -289,7 +292,7 @@ export function MerchantDetailsView({ id }: Props) {
                     }}
                   >
                     {merchant.transaction_hash}
-                  </Typography>
+                  </Link>
                   <Tooltip title="Copy transaction hash">
                     <IconButton
                       size="small"
@@ -342,6 +345,70 @@ export function MerchantDetailsView({ id }: Props) {
             </Box>
           </>
         )}
+      </Stack>
+    </Card>
+  );
+
+  const renderDemos = () => (
+    <Card sx={{ p: 3 }}>
+      <Typography variant="h6" sx={{ mb: 3 }}>
+        Demo Pages
+      </Typography>
+
+      <Stack spacing={1}>
+        {[
+          {
+            label: 'HTML Demo',
+            description: 'Vanilla JavaScript SDK integration',
+            icon: <Iconify icon="solar:code-circle-bold" />,
+            href: '/demo.html',
+          },
+          {
+            label: 'Next.js Demo',
+            description: 'React + Next.js SDK integration',
+            icon: <Iconify icon="solar:programming-bold" />,
+            href: '/demo-next',
+          },
+          {
+            label: 'Sample Testnet NFT Site',
+            description: 'Full implementation example with CasPay SDK',
+            icon: <Iconify icon="solar:gallery-add-bold" />,
+            href: 'https://caspay-sample-nft.vercel.app/',
+          },
+        ].map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            target="_blank"
+            underline="none"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.5,
+              borderRadius: 1,
+              transition: 'all 0.2s',
+              '&:hover': {
+                bgcolor: 'action.hover',
+              },
+            }}
+          >
+            {item.icon}
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                {item.label}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                {item.description}
+              </Typography>
+            </Box>
+            <Iconify
+              icon="solar:alt-arrow-right-bold"
+              sx={{ ml: 'auto', color: 'text.secondary' }}
+              width={16}
+            />
+          </Link>
+        ))}
       </Stack>
     </Card>
   );
@@ -421,6 +488,7 @@ export function MerchantDetailsView({ id }: Props) {
         <Grid size={{ xs: 12, md: 4 }}>
           <Stack spacing={3}>
             {renderDocumentation()}
+            {renderDemos()}
           </Stack>
         </Grid>
       </Grid>

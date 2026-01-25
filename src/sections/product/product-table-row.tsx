@@ -1,147 +1,254 @@
-import type { GridCellParams } from '@mui/x-data-grid';
-import type { LinearProgressProps } from '@mui/material/LinearProgress';
+import { useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import Avatar from '@mui/material/Avatar';
+import Tooltip from '@mui/material/Tooltip';
+import TableRow from '@mui/material/TableRow';
+import Checkbox from '@mui/material/Checkbox';
+import TableCell from '@mui/material/TableCell';
+import IconButton from '@mui/material/IconButton';
 import ListItemText from '@mui/material/ListItemText';
-import LinearProgress from '@mui/material/LinearProgress';
+import Chip from '@mui/material/Chip';
 
-import { RouterLink } from 'src/routes/components';
+import { useRouter } from 'src/routes/hooks';
+import { paths } from 'src/routes/paths';
 
-import { fCurrency } from 'src/utils/format-number';
-import { fTime, fDate } from 'src/utils/format-time';
+import { useBoolean, usePopover } from 'minimal-shared/hooks';
+
+import { fDate } from 'src/utils/format-time';
+
+import { useProductMutations, useMerchants } from 'src/hooks';
+
+import type { Product } from 'src/types/product';
 
 import { Label } from 'src/components/label';
+import { Iconify } from 'src/components/iconify';
+import { ConfirmDialog } from 'src/components/custom-dialog';
+import { CustomPopover } from 'src/components/custom-popover';
 
-// ----------------------------------------------------------------------
-
-type ParamsProps = {
-  params: GridCellParams;
+type Props = {
+  row: Product;
+  selected: boolean;
+  onSelectRow: () => void;
+  onDeleteSuccess?: () => void;
 };
 
-export function RenderCellPrice({
-  params,
-  price,
-  currency,
-}: ParamsProps & { price?: number; currency?: string }) {
-  const displayPrice = price ?? params.row.price;
-  const displayCurrency = currency ?? params.row.currency ?? 'USD';
-  const symbol = displayCurrency === 'USD' ? '$' : displayCurrency === 'CSPR' ? 'CSPR ' : '';
+export function ProductTableRow({ row, selected, onSelectRow, onDeleteSuccess }: Props) {
+  const router = useRouter();
+  const confirm = useBoolean();
+  const popover = usePopover();
+  
+  const { currentMerchant } = useMerchants();
+  const { deleteProduct, toggleStatus } = useProductMutations(currentMerchant?.id);
 
-  return `${symbol}${fCurrency(displayPrice)}`;
-}
+  const handleEdit = useCallback(() => {
+    router.push(paths.dashboard.product.edit(row.id));
+    popover.onClose();
+  }, [router, row.id, popover]);
 
-export function RenderCellPublish({
-  params,
-  publish,
-}: ParamsProps & { publish?: string }) {
-  const status = publish ?? params.row.publish ?? (params.row.active ? 'active' : 'inactive');
-  const isActive = status === 'published' || status === 'active';
+  const handleView = useCallback(() => {
+    router.push(paths.dashboard.product.details(row.id));
+    popover.onClose();
+  }, [router, row.id, popover]);
 
-  return (
-    <Label variant="soft" color={isActive ? 'success' : 'default'}>
-      {status}
-    </Label>
-  );
-}
+  const handleToggleStatus = useCallback(async () => {
+    try {
+      await toggleStatus(row.id);
+      popover.onClose();
+      onDeleteSuccess?.();
+    } catch (error) {
+      console.error('Error toggling product status:', error);
+    }
+  }, [toggleStatus, row.id, popover, onDeleteSuccess]);
 
-export function RenderCellCreatedAt({ params }: ParamsProps) {
-  const dateField = params.row.createdAt || params.row.created_at;
+  const handleDelete = useCallback(async () => {
+    try {
+      await deleteProduct(row.id);
+      confirm.onFalse();
+      onDeleteSuccess?.();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
+  }, [deleteProduct, row.id, confirm, onDeleteSuccess]);
 
-  return (
-    <Box sx={{ gap: 0.5, display: 'flex', flexDirection: 'column' }}>
-      <span>{fDate(dateField)}</span>
-      <Box component="span" sx={{ typography: 'caption', color: 'text.secondary' }}>
-        {fTime(dateField)}
-      </Box>
-    </Box>
-  );
-}
+  const stockStatus = !row.track_inventory
+    ? null
+    : (row.stock ?? 0) === 0
+      ? 'out_of_stock'
+      : (row.stock ?? 0) <= 10
+        ? 'low_stock'
+        : 'in_stock';
 
-export function RenderCellStock({
-  params,
-  inventoryType,
-}: ParamsProps & { inventoryType?: string }) {
-  const stockType =
-    inventoryType ??
-    params.row.inventoryType ??
-    (params.row.track_inventory
-      ? params.row.stock && params.row.stock > 0
-        ? params.row.stock > 10
-          ? 'in_stock'
-          : 'low_stock'
-        : 'out_of_stock'
-      : 'in_stock');
+  const stockColors = {
+    in_stock: 'success' as const,
+    low_stock: 'warning' as const,
+    out_of_stock: 'error' as const,
+  };
 
-  const color: LinearProgressProps['color'] =
-    (stockType === 'out_of_stock' && 'error') ||
-    (stockType === 'low_stock' && 'warning') ||
-    'success';
-
-  const stockValue = params.row.stock ?? params.row.available ?? 0;
-  const maxStock = params.row.quantity ?? 100;
-  const percentage = maxStock > 0 ? (stockValue * 100) / maxStock : 0;
-
-  const displayText =
-    stockType === 'out_of_stock'
-      ? 'Out of stock'
-      : stockType === 'low_stock'
-        ? `${stockValue} (Low stock)`
-        : `${stockValue} In stock`;
+  const stockLabels = {
+    in_stock: `${row.stock} In stock`,
+    low_stock: `${row.stock} Low stock`,
+    out_of_stock: 'Out of stock',
+  };
 
   return (
-    <Box sx={{ width: 1, typography: 'caption', color: 'text.secondary' }}>
-      <LinearProgress
-        color={color}
-        variant="determinate"
-        value={percentage}
-        sx={[{ mb: 1, width: 80, height: 6 }]}
-      />
-      {displayText}
-    </Box>
-  );
-}
+    <>
+      <TableRow hover selected={selected}>
+        <TableCell padding="checkbox">
+          <Checkbox checked={selected} onClick={onSelectRow} />
+        </TableCell>
 
-export function RenderCellProduct({
-  params,
-  href,
-  coverUrl,
-}: ParamsProps & { href: string; coverUrl?: string }) {
-  const imageUrl = coverUrl ?? params.row.coverUrl ?? params.row.image_url;
-  const category = params.row.category ?? params.row.currency ?? 'Product';
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              alt={row.name}
+              src={row.image_url || undefined}
+              variant="rounded"
+              sx={{ width: 48, height: 48 }}
+            >
+              {row.name?.charAt(0).toUpperCase()}
+            </Avatar>
 
-  return (
-    <Box
-      sx={{
-        py: 2,
-        gap: 2,
-        width: 1,
-        display: 'flex',
-        alignItems: 'center',
-      }}
-    >
-      <Avatar
-        alt={params.row.name}
-        src={imageUrl}
-        variant="rounded"
-        sx={{ width: 64, height: 64 }}
+            <ListItemText
+              primary={row.name}
+              secondary={row.description ? row.description.slice(0, 40) + '...' : '-'}
+              primaryTypographyProps={{ noWrap: true }}
+              secondaryTypographyProps={{ color: 'text.disabled', noWrap: true }}
+            />
+          </Box>
+        </TableCell>
+
+        <TableCell>
+          <Tooltip title="Copy Product ID">
+            <Link
+              component="button"
+              onClick={() => navigator.clipboard.writeText(row.product_id)}
+              underline="hover"
+              color="inherit"
+              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
+            >
+              {row.product_id}
+            </Link>
+          </Tooltip>
+        </TableCell>
+
+        <TableCell>
+          <Box sx={{ typography: 'body2', fontWeight: 500 }}>
+            {row.price} {row.currency}
+          </Box>
+        </TableCell>
+
+        <TableCell>
+          <Chip
+            label={row.token_address === 'NATIVE' ? 'CSPR' : 'CEP-18'}
+            size="small"
+            color={row.token_address === 'NATIVE' ? 'primary' : 'secondary'}
+            variant="soft"
+          />
+        </TableCell>
+
+        <TableCell>
+          {!row.track_inventory ? (
+            <Chip
+              label="No tracking"
+              size="small"
+              variant="outlined"
+              color="default"
+            />
+          ) : stockStatus ? (
+            <Label variant="soft" color={stockColors[stockStatus]}>
+              {stockLabels[stockStatus]}
+            </Label>
+          ) : null}
+        </TableCell>
+
+        <TableCell>
+          <Label variant="soft" color={row.active ? 'success' : 'default'}>
+            {row.active ? 'Active' : 'Inactive'}
+          </Label>
+        </TableCell>
+
+        <TableCell>
+          <Box sx={{ typography: 'caption', color: 'text.secondary' }}>
+            {fDate(row.created_at)}
+          </Box>
+        </TableCell>
+
+        <TableCell align="right">
+          <IconButton onClick={popover.onOpen}>
+            <Iconify icon="eva:more-vertical-fill" />
+          </IconButton>
+        </TableCell>
+      </TableRow>
+
+      <CustomPopover
+        open={popover.open}
+        anchorEl={popover.anchorEl}
+        onClose={popover.onClose}
+        slotProps={{ arrow: { placement: 'right-top' } }}
       >
-        {!imageUrl && params.row.name?.charAt(0).toUpperCase()}
-      </Avatar>
+        <Stack>
+          <Button
+            size="small"
+            color="inherit"
+            startIcon={<Iconify icon="solar:eye-bold" />}
+            onClick={handleView}
+            sx={{ justifyContent: 'flex-start' }}
+          >
+            View
+          </Button>
 
-      <ListItemText
-        primary={
-          <Link component={RouterLink} href={href} color="inherit">
-            {params.row.name}
-          </Link>
+          <Button
+            size="small"
+            color="inherit"
+            startIcon={<Iconify icon="solar:pen-bold" />}
+            onClick={handleEdit}
+            sx={{ justifyContent: 'flex-start' }}
+          >
+            Edit
+          </Button>
+
+          <Button
+            size="small"
+            color="inherit"
+            startIcon={
+              <Iconify icon={row.active ? 'solar:eye-closed-bold' : 'solar:eye-bold'} />
+            }
+            onClick={handleToggleStatus}
+            sx={{ justifyContent: 'flex-start' }}
+          >
+            {row.active ? 'Deactivate' : 'Activate'}
+          </Button>
+
+          <Button
+            size="small"
+            color="error"
+            startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
+            onClick={() => {
+              confirm.onTrue();
+              popover.onClose();
+            }}
+            sx={{ justifyContent: 'flex-start' }}
+          >
+            Delete
+          </Button>
+        </Stack>
+      </CustomPopover>
+
+      <ConfirmDialog
+        open={confirm.value}
+        onClose={confirm.onFalse}
+        title="Delete Product"
+        content="Are you sure you want to delete this product? This action cannot be undone."
+        action={
+          <Button variant="contained" color="error" onClick={handleDelete}>
+            Delete
+          </Button>
         }
-        secondary={category}
-        slotProps={{
-          primary: { noWrap: true },
-          secondary: { sx: { color: 'text.disabled' } },
-        }}
       />
-    </Box>
+    </>
   );
 }
