@@ -152,46 +152,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (network && network !== 'testnet' && network !== 'mainnet') {
-      return NextResponse.json(
-        {
-          error: 'Invalid network. Must be testnet or mainnet',
-          code: 'INVALID_NETWORK'
-        },
-        { 
-          status: 400,
-          headers: {
-            ...rateLimitHeaders,
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
-          }
-        }
-      );
-    }
-
-    // 4.2 Validate network matches merchant network
-    const requestedNetwork = network || merchant.network || 'testnet';
-    const merchantNetwork = merchant.network || 'testnet';
-    
-    if (requestedNetwork !== merchantNetwork) {
-      return NextResponse.json(
-        {
-          error: `Network mismatch. Merchant is on ${merchantNetwork}, but ${requestedNetwork} was requested`,
-          code: 'NETWORK_MISMATCH'
-        },
-        { 
-          status: 400,
-          headers: {
-            ...rateLimitHeaders,
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
-          }
-        }
-      );
-    }
-
     // 5. Verify merchant_id matches authenticated merchant
     if (merchantId !== merchant.merchant_id) {
       return NextResponse.json(
@@ -255,6 +215,8 @@ export async function GET(req: NextRequest) {
         // Plan not found, return empty
         return NextResponse.json(
           {
+            success: true,
+            active: false,
             isActive: false,
             subscriptions: [],
             message: 'Plan not found',
@@ -306,7 +268,10 @@ export async function GET(req: NextRequest) {
     if (!subscriptions || subscriptions.length === 0) {
       return NextResponse.json(
         {
+          success: true,
+          active: false,
           isActive: false,
+          subscriptions: [],
           message: 'No active subscriptions found',
           responseTime: `${responseTime}ms`
         },
@@ -346,8 +311,11 @@ export async function GET(req: NextRequest) {
     // Return most recent subscription (minimal info)
     return NextResponse.json(
       {
+        success: true,
+        active: true,
         isActive: true,
         subscription: minimalSubscriptions[0],
+        subscriptions: minimalSubscriptions,
         count: subscriptions.length,
         responseTime: `${responseTime}ms`
       },

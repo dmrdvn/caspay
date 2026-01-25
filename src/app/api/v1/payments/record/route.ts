@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
         .select('*')
         .eq('merchant_id', merchant.id)
         .eq('plan_id', plan.id)
-        .eq('subscriber_address', verification.sender)
+        .eq('subscriber_address', verification.sender.toLowerCase())
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -349,7 +349,7 @@ export async function POST(req: NextRequest) {
           .insert({
             merchant_id: merchant.id,
             plan_id: plan.id,
-            subscriber_address: verification.sender,
+            subscriber_address: verification.sender.toLowerCase(),
             status: 'active',
             current_period_start: currentPeriodStart.toISOString(),
             current_period_end: currentPeriodEnd.toISOString(),
