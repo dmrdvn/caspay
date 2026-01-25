@@ -266,7 +266,9 @@ export async function POST(req: NextRequest) {
         if (isActive) {
           const currentPeriodEnd = new Date(existingSubscription.current_period_end);
           const newPeriodEnd = new Date(currentPeriodEnd);
-          if (plan.interval === 'monthly') {
+          if (plan.interval === 'weekly') {
+            newPeriodEnd.setDate(newPeriodEnd.getDate() + 7);
+          } else if (plan.interval === 'monthly') {
             newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
           } else if (plan.interval === 'yearly') {
             newPeriodEnd.setFullYear(newPeriodEnd.getFullYear() + 1);
@@ -300,7 +302,9 @@ export async function POST(req: NextRequest) {
           const currentPeriodStart = new Date();
           const currentPeriodEnd = new Date();
           
-          if (plan.interval === 'monthly') {
+          if (plan.interval === 'weekly') {
+            currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 7);
+          } else if (plan.interval === 'monthly') {
             currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
           } else if (plan.interval === 'yearly') {
             currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
@@ -338,7 +342,9 @@ export async function POST(req: NextRequest) {
         const currentPeriodStart = new Date();
         const currentPeriodEnd = new Date();
         
-        if (plan.interval === 'monthly') {
+        if (plan.interval === 'weekly') {
+          currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 7);
+        } else if (plan.interval === 'monthly') {
           currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
         } else if (plan.interval === 'yearly') {
           currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
