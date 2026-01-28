@@ -794,7 +794,7 @@ export function BridgePaymentDialog({ open, paylink, onClose, onSuccess }: Props
           <Stack direction="row" alignItems="center" justifyContent="center" spacing={0.5} sx={{ width: 1 }}>
             <Iconify icon="solar:shield-check-bold" width={16} color="text.disabled" />
             <Typography variant="caption" color="text.disabled">
-              Powered by Casper Network
+              Powered by NowNodes
             </Typography>
           </Stack>
         </DialogActions>
