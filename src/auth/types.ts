@@ -11,6 +11,8 @@ export type AuthContextValue = {
   authenticated: boolean;
   unauthenticated: boolean;
   checkUserSession?: () => Promise<void>;
+  signInWithCasper?: () => Promise<boolean>;
+  signOut?: () => Promise<void>;
 };
 
 // ----------------------------------------------------------------------
@@ -20,7 +22,7 @@ export type AuthContextValue = {
 export type CasperAccountType = {
   publicKey: string;
   accountHash: string;
-  provider: string; // 'casper-wallet' | 'ledger' | 'metamask-snap' | 'casperdash'
+  provider: string;
 };
 
 export type CasperUserType = {

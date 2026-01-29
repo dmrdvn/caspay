@@ -1,39 +1,10 @@
 'use client';
 
 import type { AuthState } from '../../types';
-
 import { useSetState } from 'minimal-shared/hooks';
 import { useRef, useMemo, useEffect, useCallback } from 'react';
-
 import { AuthContext } from '../auth-context';
-import { syncUserToSupabase, signOutFromSupabase, getUserFromSupabase } from './action';
-
-// ----------------------------------------------------------------------
-
-// Casper Wallet Event Types
-const CasperWalletEventTypes = {
-  Connected: 'casper-wallet:connected',
-  Disconnected: 'casper-wallet:disconnected',
-  ActiveKeyChanged: 'casper-wallet:activeKeyChanged',
-  Locked: 'casper-wallet:locked',
-  Unlocked: 'casper-wallet:unlocked',
-  TabChanged: 'casper-wallet:tabChanged',
-};
-
-// Local storage keys
-const STORAGE_KEYS = {
-  PUBLIC_KEY: 'casper_public_key',
-  USER: 'casper_user',
-};
-
-// Casper Wallet State type
-type CasperWalletState = {
-  isLocked: boolean;
-  isConnected: boolean | undefined;
-  activeKey: string | undefined;
-};
-
-// ----------------------------------------------------------------------
+import { supabase } from 'src/lib/supabase';
 
 type Props = {
   children: React.ReactNode;
@@ -45,237 +16,171 @@ export function CasperAuthProvider({ children }: Props) {
     loading: true,
   });
 
-  const sessionCheckedRef = useRef(false); 
+  const sessionCheckedRef = useRef(false);
   const providerRef = useRef<any>(null);
 
-  // Get Casper Wallet Provider
   const getProvider = useCallback(() => {
     if (typeof window === 'undefined') return null;
-
     const CasperWalletProvider = (window as any).CasperWalletProvider;
-    if (!CasperWalletProvider) {
-      return null;
-    }
-
+    if (!CasperWalletProvider) return null;
     if (!providerRef.current) {
       providerRef.current = CasperWalletProvider({ timeout: 30 * 60 * 1000 });
     }
-
     return providerRef.current;
   }, []);
 
-  // Check if wallet extension is available
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
+  const checkSession = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const { data: profile, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('auth_user_id', session.user.id)
+          .single();
 
-    const checkWallet = () => {
-      if ((window as any).CasperWalletProvider) {
-        return true;
+        if (error) {
+          console.error('[checkSession] Profile fetch error:', error);
+          setState({ user: null, loading: false });
+          return;
+        }
+
+        if (profile) {
+          setState({
+            user: {
+              id: profile.id,
+              publicKey: profile.public_key,
+              accountHash: profile.account_hash,
+              walletProvider: profile.wallet_provider,
+              email: profile.email,
+              displayName: profile.full_name,
+              avatarUrl: profile.avatar_url,
+              role: 'merchant',
+              createdAt: profile.created_at,
+              updatedAt: profile.updated_at,
+            },
+            loading: false,
+          });
+        } else {
+          setState({ user: null, loading: false });
+        }
+      } else {
+        setState({ user: null, loading: false });
       }
-      return false;
-    };
+    } catch (error) {
+      console.error('[checkSession] Error:', error);
+      setState({ user: null, loading: false });
+    }
+  }, [setState]);
 
-    // Check immediately
-    if (checkWallet()) return undefined;
-
-
-    const interval = setInterval(() => {
-      if (checkWallet()) {
-        clearInterval(interval);
-      }
-    }, 500);
-
-
-    const timeout = setTimeout(() => clearInterval(interval), 2000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, []);
-
-  // Check existing session
-  const checkUserSession = useCallback(async () => {
+  const signInWithCasper = useCallback(async () => {
     try {
       setState({ loading: true });
 
-      // Check local storage for existing session
-      const storedPublicKey = localStorage.getItem(STORAGE_KEYS.PUBLIC_KEY);
-
-      if (storedPublicKey) {
-        const user = await getUserFromSupabase(storedPublicKey);
-
-        if (user) {
-          sessionCheckedRef.current = true;
-          setState({
-            user: {
-              ...user,
-              displayName: user.displayName || `${user.publicKey.slice(0, 8)}...`,
-              role: user.role ?? 'merchant',
-            },
-            loading: false,
-          });
-          return;
-        }
-      }
-
-      // Check wallet connection
       const provider = getProvider();
-      if (provider) {
-        try {
-          const isConnected = await provider.isConnected();
-          if (isConnected) {
-            const activeKey = await provider.getActivePublicKey();
-            if (activeKey) {
-              const user = await syncUserToSupabase(activeKey, '', 'casper-wallet');
-
-              localStorage.setItem(STORAGE_KEYS.PUBLIC_KEY, activeKey);
-              localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-
-              sessionCheckedRef.current = true;
-              setState({
-                user: {
-                  ...user,
-                  displayName: user?.displayName || `${user?.publicKey.slice(0, 8)}...`,
-                  role: user?.role ?? 'merchant',
-                },
-                loading: false,
-              });
-              return;
-            }
-          }
-        } catch (err: any) {
-          // Error code 1: wallet locked, code 2: not connected
-          console.warn('Wallet check error:', err.message || err);
-        }
+      if (!provider) {
+        throw new Error('Casper Wallet not found');
       }
 
-      sessionCheckedRef.current = true;
+      const connected = await provider.isConnected();
+      if (!connected) {
+        await provider.requestConnection();
+      }
+
+      const publicKey = await provider.getActivePublicKey();
+      const accountHash = await provider.getActiveAccountHash?.() || publicKey;
+
+      const challengeRes = await fetch(`/api/auth/casper/challenge?publicKey=${publicKey}`);
+      const { nonce, message } = await challengeRes.json();
+
+      const signatureResponse = await provider.signMessage(message, publicKey);
+      let signature = signatureResponse.signature;
+
+      if (signature instanceof Uint8Array) {
+        signature = Buffer.from(signature).toString('hex');
+      } else if (typeof signature === 'object' && signature.data) {
+        signature = Buffer.from(signature.data).toString('hex');
+      } else if (typeof signature !== 'string') {
+        signature = String(signature);
+      }
+
+      const verifyRes = await fetch('/api/auth/casper/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publicKey,
+          signature,
+          nonce,
+          walletProvider: 'casper_wallet',
+          accountHash,
+        }),
+      });
+
+      if (!verifyRes.ok) {
+        const error = await verifyRes.json();
+        throw new Error(error.error || 'Authentication failed');
+      }
+
+      const { access_token, refresh_token } = await verifyRes.json();
+
+      await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+
+      await checkSession();
+
+      return true;
+    } catch (error: any) {
+      console.error('[signInWithCasper] Error:', error);
+      setState({ loading: false });
+      throw error;
+    }
+  }, [getProvider, setState, checkSession]);
+
+  const signOut = useCallback(async () => {
+    try {
+      await fetch('/api/auth/casper/logout', { method: 'POST' });
+      await supabase.auth.signOut();
       setState({ user: null, loading: false });
     } catch (error) {
-      console.error('checkUserSession error:', error);
-      sessionCheckedRef.current = true;
-      setState({ user: null, loading: false });
+      console.error('[signOut] Error:', error);
     }
-  }, [getProvider, setState]);
+  }, [setState]);
 
-  // Handle Casper Wallet events
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
+    if (sessionCheckedRef.current) return;
+    sessionCheckedRef.current = true;
+    checkSession();
+  }, [checkSession]);
 
-    const handleConnected = async (event: any) => {
-      try {
-        const walletState: CasperWalletState = JSON.parse(event.detail);
-        if (walletState.activeKey) {
-          const user = await syncUserToSupabase(walletState.activeKey, '', 'casper-wallet');
-
-          localStorage.setItem(STORAGE_KEYS.PUBLIC_KEY, walletState.activeKey);
-          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-
-          setState({
-            user: {
-              ...user,
-              displayName: user?.displayName || `${user?.publicKey.slice(0, 8)}...`,
-              role: user?.role ?? 'merchant',
-            },
-            loading: false,
-          });
-        }
-      } catch (error) {
-        console.error('handleConnected error:', error);
-        setState({ loading: false });
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        checkSession();
+      } else {
+        setState({ user: null, loading: false });
       }
-    };
-
-    const handleDisconnected = () => {
-      localStorage.removeItem(STORAGE_KEYS.PUBLIC_KEY);
-      localStorage.removeItem(STORAGE_KEYS.USER);
-      signOutFromSupabase();
-      setState({ user: null, loading: false });
-    };
-
-    const handleActiveKeyChanged = async (event: any) => {
-      try {
-        const walletState: CasperWalletState = JSON.parse(event.detail);
-        if (walletState.activeKey && walletState.isConnected) {
-          const user = await syncUserToSupabase(walletState.activeKey, '', 'casper-wallet');
-
-          localStorage.setItem(STORAGE_KEYS.PUBLIC_KEY, walletState.activeKey);
-          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-
-          setState({
-            user: {
-              ...user,
-              displayName: user?.displayName || `${user?.publicKey.slice(0, 8)}...`,
-              role: user?.role ?? 'merchant',
-            },
-            loading: false,
-          });
-        }
-      } catch (error) {
-        console.error('handleActiveKeyChanged error:', error);
-      }
-    };
-
-    const handleLocked = () => {
-      // Don't clear user data when locked, just note the state
-      console.log('Wallet locked');
-    };
-
-    const handleUnlocked = () => {
-      // Re-check session when unlocked
-      sessionCheckedRef.current = false; // Allow re-check after unlock
-      checkUserSession();
-    };
-
-    // Add event listeners
-    window.addEventListener(CasperWalletEventTypes.Connected, handleConnected);
-    window.addEventListener(CasperWalletEventTypes.Disconnected, handleDisconnected);
-    window.addEventListener(CasperWalletEventTypes.ActiveKeyChanged, handleActiveKeyChanged);
-    window.addEventListener(CasperWalletEventTypes.Locked, handleLocked);
-    window.addEventListener(CasperWalletEventTypes.Unlocked, handleUnlocked);
+    });
 
     return () => {
-      window.removeEventListener(CasperWalletEventTypes.Connected, handleConnected);
-      window.removeEventListener(CasperWalletEventTypes.Disconnected, handleDisconnected);
-      window.removeEventListener(CasperWalletEventTypes.ActiveKeyChanged, handleActiveKeyChanged);
-      window.removeEventListener(CasperWalletEventTypes.Locked, handleLocked);
-      window.removeEventListener(CasperWalletEventTypes.Unlocked, handleUnlocked);
+      authListener.subscription.unsubscribe();
     };
-  }, [setState, checkUserSession]);
-
-  // Initialize on mount - check session immediately, no delay!
-  useEffect(() => {
-    if (!sessionCheckedRef.current) {
-      checkUserSession();
-    }
-  }, [checkUserSession]);
-
-  // ----------------------------------------------------------------------
-
-  const checkAuthenticated = state.user ? 'authenticated' : 'unauthenticated';
-  const status = state.loading ? 'loading' : checkAuthenticated;
+  }, [checkSession, setState]);
 
   const memoizedValue = useMemo(
     () => ({
-      user: state.user
-        ? {
-            ...state.user,
-            id: state.user.id,
-            displayName: state.user.displayName || 'Casper User',
-            role: state.user.role ?? 'merchant',
-          }
-        : null,
-      loading: status === 'loading',
-      authenticated: status === 'authenticated',
-      unauthenticated: status === 'unauthenticated',
-      checkUserSession,
+      user: state.user,
+      loading: state.loading,
+      authenticated: !!state.user,
+      unauthenticated: !state.user && !state.loading,
+      checkUserSession: checkSession,
+      signInWithCasper,
+      signOut,
     }),
-    [state.user, status, checkUserSession]
+    [state.user, state.loading, checkSession, signInWithCasper, signOut]
   );
 
-  return <AuthContext value={memoizedValue}>{children}</AuthContext>;
+  return <AuthContext.Provider value={memoizedValue}>{children}</AuthContext.Provider>;
 }
-
-// Re-export for backwards compatibility
-export { CasperAuthProvider as AuthProvider };
