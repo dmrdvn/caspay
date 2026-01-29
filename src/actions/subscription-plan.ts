@@ -6,11 +6,12 @@ import type {
   SubscriptionPlanUpdateInput,
 } from 'src/types/subscription';
 
-import { supabase } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 
 export async function getSubscriptionPlansByMerchant(
   merchantId: string
 ): Promise<SubscriptionPlan[]> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('subscription_plans')
     .select('*')
@@ -28,6 +29,7 @@ export async function getSubscriptionPlansByMerchant(
 export async function getSubscriptionPlanById(
   planId: string
 ): Promise<SubscriptionPlan | null> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('subscription_plans')
     .select('*')
@@ -48,6 +50,7 @@ export async function getSubscriptionPlanById(
 export async function createSubscriptionPlan(
   input: SubscriptionPlanCreateInput
 ): Promise<SubscriptionPlan> {
+  const supabase = await createServerSupabaseClient();
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 9);
   const planId = input.plan_id || `plan_${timestamp}_${random}`;
@@ -131,6 +134,7 @@ export async function updateSubscriptionPlan(
   planId: string,
   input: SubscriptionPlanUpdateInput
 ): Promise<SubscriptionPlan> {
+  const supabase = await createServerSupabaseClient();
   const updateData: any = {
     updated_at: new Date().toISOString(),
   };
@@ -163,6 +167,7 @@ export async function updateSubscriptionPlan(
 }
 
 export async function deleteSubscriptionPlan(planId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase
     .from('subscription_plans')
     .update({ active: false, updated_at: new Date().toISOString() })
@@ -175,7 +180,7 @@ export async function deleteSubscriptionPlan(planId: string): Promise<void> {
 }
 
 export async function hardDeleteSubscriptionPlan(planId: string): Promise<void> {
-
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase.from('subscription_plans').delete().eq('id', planId);
 
   if (error) {
@@ -187,7 +192,7 @@ export async function hardDeleteSubscriptionPlan(planId: string): Promise<void> 
 export async function toggleSubscriptionPlanStatus(
   planId: string
 ): Promise<SubscriptionPlan> {
-
+  const supabase = await createServerSupabaseClient();
   const { data: currentPlan, error: fetchError } = await supabase
     .from('subscription_plans')
     .select('active, merchant:merchants(network)')
@@ -239,7 +244,7 @@ export async function toggleSubscriptionPlanStatus(
 }
 
 export async function getSubscriptionPlanStats(merchantId: string) {
-
+  const supabase = await createServerSupabaseClient();
   const { data: plans, error } = await supabase
     .from('subscription_plans')
     .select('active, price, interval')

@@ -9,9 +9,10 @@ import type {
 
 import { hashApiKey, generateApiKey, generateKeyHint } from 'src/utils/api-key';
 
-import { supabase } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 
 export async function getApiKeys(merchantId: string): Promise<ApiKeyListItem[]> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('api_keys')
     .select('*')
@@ -27,6 +28,7 @@ export async function getApiKeys(merchantId: string): Promise<ApiKeyListItem[]> 
 }
 
 export async function getApiKeyById(keyId: string): Promise<ApiKeyListItem> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('api_keys')
     .select('*')
@@ -45,7 +47,8 @@ export async function getApiKeyById(keyId: string): Promise<ApiKeyListItem> {
 }
 
 export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyWithSecret> {
-  const { merchant_id, name, environment, permissions, expires_at } = input;
+  const supabase = await createServerSupabaseClient();
+  const { merchant_id, name, environment, permissions, allowed_domains, expires_at } = input;
 
   // Check merchant's network to ensure key environment matches
   const { data: merchant, error: merchantError } = await supabase
@@ -87,6 +90,7 @@ export async function createApiKey(input: CreateApiKeyInput): Promise<ApiKeyWith
       key_hash: keyHash,
       key_hint: keyHint,
       permissions: permissions || defaultPermissions,
+      allowed_domains,
       expires_at,
       active: true,
     })
@@ -108,6 +112,7 @@ export async function updateApiKey(
   keyId: string,
   input: UpdateApiKeyInput
 ): Promise<ApiKeyListItem> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('api_keys')
     .update(input)
@@ -127,6 +132,7 @@ export async function updateApiKey(
 
 
 export async function deleteApiKey(keyId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase.from('api_keys').delete().eq('id', keyId);
 
   if (error) {
@@ -136,6 +142,7 @@ export async function deleteApiKey(keyId: string): Promise<void> {
 }
 
 export async function rotateApiKey(keyId: string): Promise<ApiKeyWithSecret> {
+  const supabase = await createServerSupabaseClient();
   const { data: currentKey, error: fetchError } = await supabase
     .from('api_keys')
     .select('*, merchant:merchants(network)')
@@ -172,7 +179,7 @@ export async function rotateApiKey(keyId: string): Promise<ApiKeyWithSecret> {
 }
 
 export async function toggleApiKeyStatus(keyId: string): Promise<ApiKeyListItem> {
-
+  const supabase = await createServerSupabaseClient();
   const { data: currentKey, error: fetchError } = await supabase
     .from('api_keys')
     .select('active')
@@ -192,6 +199,7 @@ export async function toggleApiKeyStatus(keyId: string): Promise<ApiKeyListItem>
 }
 
 export async function updateApiKeyLastUsed(keyHash: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase
     .from('api_keys')
     .update({ last_used_at: new Date().toISOString() })

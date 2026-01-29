@@ -7,13 +7,13 @@ import type {
   RecentTransaction,
 } from 'src/types/merchant-analytics';
 
-import { createClient } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 
 export async function getMerchantAnalytics(
   merchantId: string
 ): Promise<{ data: MerchantAnalytics | null; error: Error | null }> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
 
     const { data, error } = await supabase
       .from('merchant_analytics')
@@ -35,7 +35,7 @@ export async function getTopPerformingItems(
   limit: number = 10
 ): Promise<{ data: TopPerformingItem[]; error: Error | null }> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
 
     const { data: topProducts, error: productsError } = await supabase
       .from('products')
@@ -148,7 +148,7 @@ export async function getRecentTransactions(
   limit: number = 5
 ): Promise<{ data: RecentTransaction[]; error: Error | null }> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
 
     const { data: payments, error } = await supabase
       .from('payment_analytics')
@@ -189,7 +189,7 @@ export async function getMonthlyActivity(
   year: number = 2025
 ): Promise<{ data: MonthlyActivity[]; error: Error | null }> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
 
     const { data: productSales, error: productError } = await supabase
       .from('payment_analytics')

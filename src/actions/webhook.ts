@@ -10,9 +10,11 @@ import type {
 
 import { generateWebhookSecret } from 'src/utils/webhook';
 
-import { supabase } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 
 export async function getWebhookEndpoints(merchantId: string): Promise<WebhookEndpoint[]> {
+  const supabase = await createServerSupabaseClient();
+  
   const { data, error } = await supabase
     .from('webhook_endpoints')
     .select('*')
@@ -28,6 +30,8 @@ export async function getWebhookEndpoints(merchantId: string): Promise<WebhookEn
 }
 
 export async function getWebhookEndpointById(endpointId: string): Promise<WebhookEndpoint> {
+  const supabase = await createServerSupabaseClient();
+  
   const { data, error } = await supabase
     .from('webhook_endpoints')
     .select('*')
@@ -43,6 +47,8 @@ export async function getWebhookEndpointById(endpointId: string): Promise<Webhoo
 }
 
 export async function createWebhookEndpoint(input: CreateWebhookInput): Promise<WebhookEndpoint> {
+  const supabase = await createServerSupabaseClient();
+  
   const { merchant_id, url, description, events } = input;
 
   const secret = generateWebhookSecret();
@@ -72,6 +78,8 @@ export async function updateWebhookEndpoint(
   endpointId: string,
   input: UpdateWebhookInput
 ): Promise<WebhookEndpoint> {
+  const supabase = await createServerSupabaseClient();
+  
   const { data, error } = await supabase
     .from('webhook_endpoints')
     .update(input)
@@ -88,6 +96,8 @@ export async function updateWebhookEndpoint(
 }
 
 export async function deleteWebhookEndpoint(endpointId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  
   const { error } = await supabase.from('webhook_endpoints').delete().eq('id', endpointId);
 
   if (error) {
@@ -97,6 +107,7 @@ export async function deleteWebhookEndpoint(endpointId: string): Promise<void> {
 }
 
 export async function toggleWebhookStatus(endpointId: string): Promise<WebhookEndpoint> {
+  const supabase = await createServerSupabaseClient();
 
   const { data: currentEndpoint, error: fetchError } = await supabase
     .from('webhook_endpoints')
@@ -113,6 +124,8 @@ export async function toggleWebhookStatus(endpointId: string): Promise<WebhookEn
 
 
 export async function regenerateWebhookSecret(endpointId: string): Promise<WebhookEndpoint> {
+  const supabase = await createServerSupabaseClient();
+  
   const newSecret = generateWebhookSecret();
 
   const { data, error } = await supabase
@@ -182,6 +195,8 @@ export async function getWebhookDeliveries(
   endpointId: string,
   limit: number = 50
 ): Promise<WebhookDelivery[]> {
+  const supabase = await createServerSupabaseClient();
+  
   const { data, error } = await supabase
     .from('webhook_deliveries')
     .select('*')
@@ -201,6 +216,7 @@ export async function getRecentWebhookDeliveries(
   merchantId: string,
   limit: number = 50
 ): Promise<WebhookDelivery[]> {
+  const supabase = await createServerSupabaseClient();
 
   const { data: endpoints, error: endpointsError } = await supabase
     .from('webhook_endpoints')
@@ -229,6 +245,7 @@ export async function getRecentWebhookDeliveries(
 }
 
 export async function retryWebhookDelivery(deliveryId: string): Promise<WebhookDelivery> {
+  const supabase = await createServerSupabaseClient();
 
   const { data: delivery, error: fetchError } = await supabase
     .from('webhook_deliveries')

@@ -1,6 +1,6 @@
 'use server';
 
-import { supabase } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 import type {
   PayLink,
   PayLinkCreateInput,
@@ -20,6 +20,8 @@ function generateShortId(length: number = 6): string {
 }
 
 async function generateSlug(productName: string): Promise<string> {
+  const supabase = await createServerSupabaseClient();
+  
   const baseSlug = productName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -54,6 +56,7 @@ export async function createPayLink(
   input: PayLinkCreateInput
 ): Promise<CreatePayLinkResponse> {
   try {
+    const supabase = await createServerSupabaseClient();
 
     const { data: merchant, error: merchantError } = await supabase
       .from('merchants')
@@ -126,6 +129,8 @@ export async function createPayLink(
 
 export async function getPayLinks(merchantId: string): Promise<PayLinkWithProduct[]> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data, error } = await supabase
       .from('paylinks')
       .select(
@@ -165,6 +170,8 @@ export async function getPayLinks(merchantId: string): Promise<PayLinkWithProduc
 
 export async function getPayLinkBySlug(slug: string): Promise<PayLinkWithProduct | null> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data, error } = await supabase
       .from('paylinks')
       .select(
@@ -213,6 +220,8 @@ export async function getPayLinkBySlug(slug: string): Promise<PayLinkWithProduct
 
 export async function getPayLink(id: string, merchantId: string): Promise<PayLinkWithProduct | null> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data, error } = await supabase
       .from('paylinks')
       .select(
@@ -256,6 +265,8 @@ export async function updatePayLink(
   input: PayLinkUpdateInput
 ): Promise<PayLink> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data, error } = await supabase
       .from('paylinks')
       .update({
@@ -280,6 +291,8 @@ export async function updatePayLink(
 
 export async function deletePayLink(id: string): Promise<void> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { error } = await supabase
       .from('paylinks')
       .delete()
@@ -309,6 +322,8 @@ export async function trackPayLinkEvent(
   }
 ): Promise<void> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { error } = await supabase.from('paylink_analytics').insert({
       paylink_id: paylinkId,
       event_type: eventType,
@@ -331,6 +346,8 @@ export async function trackPayLinkEvent(
 
 export async function incrementPayLinkUsage(paylinkId: string): Promise<void> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { error } = await supabase.rpc('increment_paylink_usage', {
       paylink_id: paylinkId,
     });
@@ -348,6 +365,7 @@ export async function getPayLinkStats(
   merchantId: string
 ): Promise<PayLinkStats | null> {
   try {
+    const supabase = await createServerSupabaseClient();
 
     const { data: paylink, error: paylinkError } = await supabase
       .from('paylinks')
@@ -417,6 +435,8 @@ export async function getPayLinkStats(
 
 export async function getAllPayLinkStats(merchantId: string): Promise<PayLinkStats[]> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data: paylinks, error: paylinksError } = await supabase
       .from('paylinks')
       .select('id')

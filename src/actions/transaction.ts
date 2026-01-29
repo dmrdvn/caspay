@@ -2,9 +2,11 @@
 
 import type { TransactionItem } from 'src/types/transaction';
 
-import { supabase } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 
 export async function getTransactions(): Promise<TransactionItem[]> {
+  const supabase = await createServerSupabaseClient();
+  
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   if (userError || !user) {
@@ -71,6 +73,8 @@ export async function getTransactions(): Promise<TransactionItem[]> {
 }
 
 export async function getTransaction(transactionId: string): Promise<TransactionItem | null> {
+  const supabase = await createServerSupabaseClient();
+  
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   if (userError || !user) {

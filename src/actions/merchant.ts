@@ -7,10 +7,12 @@ import type {
   UpdateMerchantData,
 } from 'src/types/merchant';
 
-import { supabase } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 
 export async function getMerchantsByUserId(userId: string): Promise<Merchant[]> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data: merchantsData, error: merchantsError } = await supabase
       .from('merchants')
       .select('*')
@@ -28,6 +30,8 @@ export async function getMerchantsByUserId(userId: string): Promise<Merchant[]> 
 
 export async function getMerchantById(merchantId: string): Promise<Merchant | null> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data, error } = await supabase
       .from('merchants')
       .select('*')
@@ -45,6 +49,8 @@ export async function getMerchantById(merchantId: string): Promise<Merchant | nu
 
 export async function createMerchant(data: CreateMerchantData): Promise<Merchant> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
       .select('public_key')
@@ -134,6 +140,8 @@ export async function updateMerchant(
   data: UpdateMerchantData
 ): Promise<Merchant> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data: merchant, error } = await supabase
       .from('merchants')
       .update({
@@ -163,6 +171,8 @@ export async function updateMerchant(
 
 export async function deleteMerchant(merchantId: string): Promise<void> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { error } = await supabase.from('merchants').delete().eq('id', merchantId);
 
     if (error) {
@@ -180,6 +190,8 @@ export async function updateMerchantStatus(
   status: MerchantStatus
 ): Promise<Merchant> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data: merchant, error } = await supabase
       .from('merchants')
       .update({ status })

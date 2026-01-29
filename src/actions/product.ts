@@ -2,9 +2,10 @@
 
 import type { Product, ProductCreateInput, ProductUpdateInput } from 'src/types/product';
 
-import { supabase } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 
 export async function getProductsByMerchant(merchantId: string): Promise<Product[]> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -20,6 +21,7 @@ export async function getProductsByMerchant(merchantId: string): Promise<Product
 }
 
 export async function getProductById(productId: string): Promise<Product | null> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -38,6 +40,7 @@ export async function getProductById(productId: string): Promise<Product | null>
 }
 
 export async function createProduct(input: ProductCreateInput): Promise<Product> {
+  const supabase = await createServerSupabaseClient();
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 9);
   const productId = input.product_id || `prod_${timestamp}_${random}`;
@@ -117,6 +120,7 @@ export async function updateProduct(
   productId: string,
   input: ProductUpdateInput
 ): Promise<Product> {
+  const supabase = await createServerSupabaseClient();
   const updateData: any = {
     updated_at: new Date().toISOString(),
   };
@@ -151,6 +155,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(productId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase
     .from('products')
     .update({ active: false, updated_at: new Date().toISOString() })
@@ -163,6 +168,7 @@ export async function deleteProduct(productId: string): Promise<void> {
 }
 
 export async function hardDeleteProduct(productId: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase.from('products').delete().eq('id', productId);
 
   if (error) {
@@ -172,6 +178,7 @@ export async function hardDeleteProduct(productId: string): Promise<void> {
 }
 
 export async function toggleProductStatus(productId: string): Promise<Product> {
+  const supabase = await createServerSupabaseClient();
   const { data: currentProduct, error: fetchError } = await supabase
     .from('products')
     .select('active, merchant:merchants(network)')
@@ -224,6 +231,7 @@ export async function updateProductStock(
   productId: string,
   newStock: number
 ): Promise<Product> {
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from('products')
     .update({
@@ -243,6 +251,7 @@ export async function updateProductStock(
 }
 
 export async function getProductStats(merchantId: string) {
+  const supabase = await createServerSupabaseClient();
   const { data: products, error } = await supabase
     .from('products')
     .select('active, stock, price')

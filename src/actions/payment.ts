@@ -7,11 +7,13 @@ import type {
   ActionResponse,
 } from 'src/types/payment';
 
-import { supabase } from 'src/lib/supabase';
+import { createServerSupabaseClient } from 'src/lib/supabase-server';
 import { generatePaymentId } from 'src/utils/generate-payment-id';
 
 export async function recordPayLinkPayment(input: RecordPayLinkPaymentInput): Promise<void> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data: paylink, error: paylinkError } = await supabase
       .from('paylinks')
       .select('*, product:products(*), merchant:merchants(*)')
@@ -73,6 +75,8 @@ export async function createPendingPayment(
   }>
 > {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data: paylink } = await supabase
       .from('paylinks')
       .select('network')
@@ -147,6 +151,8 @@ export async function createPendingPayment(
 }
 
 export async function checkPaymentStatus(paymentId: string): Promise<PaymentStatusResponse> {
+  const supabase = await createServerSupabaseClient();
+  
   const { data: payment } = await supabase
     .from('payments')
     .select('status, transaction_hash, metadata')
@@ -196,6 +202,8 @@ export async function recordBridgePayment(input: {
   fromAddress: string;
 }): Promise<ActionResponse<{ paymentId: string }>> {
   try {
+    const supabase = await createServerSupabaseClient();
+    
     const { data: paylink } = await supabase
       .from('paylinks')
       .select('network')
