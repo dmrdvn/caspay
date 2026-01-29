@@ -11,9 +11,6 @@ import { CONFIG } from 'src/global-config';
 import { toast } from 'src/components/snackbar';
 
 import { useAuthContext } from 'src/auth/hooks';
-import { signOutFromSupabase } from 'src/auth/context/casper/action';
-
-// ----------------------------------------------------------------------
 
 type Props = ButtonProps & {
   onClose?: () => void;
@@ -22,14 +19,10 @@ type Props = ButtonProps & {
 export function SignOutButton({ onClose, sx, ...other }: Props) {
   const router = useRouter();
 
-  const { checkUserSession } = useAuthContext();
+  const { signOut } = useAuthContext();
 
   const handleLogout = useCallback(async () => {
     try {
-      // Clear local storage first
-      await signOutFromSupabase();
-      
-      // Disconnect Casper Wallet (this will trigger handleDisconnected event)
       if (typeof window !== 'undefined' && (window as any).CasperWalletProvider) {
         try {
           const provider = (window as any).CasperWalletProvider({ timeout: 30 * 60 * 1000 });
@@ -38,19 +31,16 @@ export function SignOutButton({ onClose, sx, ...other }: Props) {
           console.warn('Wallet disconnect error (might be already disconnected):', walletError);
         }
       }
-      
-      // Refresh session to clear user state
-      await checkUserSession?.();
+      await signOut?.();
 
       onClose?.();
-      
-      // Force redirect to sign-in page
+
       router.replace(CONFIG.auth.redirectPath);
     } catch (error) {
       console.error(error);
       toast.error('Unable to logout!');
     }
-  }, [checkUserSession, onClose, router]);
+  }, [onClose, router, signOut]);
 
   return (
     <Button

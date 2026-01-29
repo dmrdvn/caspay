@@ -18,16 +18,15 @@ import { toast } from 'src/components/snackbar';
 import { Form, Field, schemaUtils } from 'src/components/hook-form';
 
 import { useAuthContext } from 'src/auth/hooks';
-import { updateUserProfile } from 'src/auth/context/casper/action';
+import { updateUserProfile } from 'src/actions/user';
 
-// ----------------------------------------------------------------------
 
 export type UpdateUserSchemaType = z.infer<typeof UpdateUserSchema>;
 
 export const UpdateUserSchema = z.object({
   displayName: z.string().min(1, { message: 'Name is required!' }),
   email: schemaUtils.email(),
-  photoURL: schemaUtils.file({ error: 'Avatar is required!' }).optional(),
+  photoURL: z.any().nullable().optional(),
 });
 
 // ----------------------------------------------------------------------
@@ -66,14 +65,12 @@ export function ProfileGeneral() {
         return;
       }
 
-      // Update user profile in Supabase
       await updateUserProfile(user.publicKey, {
         full_name: data.displayName,
         email: data.email,
         avatar_url: typeof data.photoURL === 'string' ? data.photoURL : undefined,
       });
 
-      // Refresh user session
       await checkUserSession?.();
 
       toast.success('Profile updated successfully!');
@@ -86,7 +83,6 @@ export function ProfileGeneral() {
 
   return (
     <Form methods={methods} onSubmit={onSubmit}>
-      {/* Onboarding info */}
       {(!user?.displayName || !user?.email) && (
         <Alert severity="info" sx={{ mb: 3 }}>
           Welcome! Please complete your profile information.
@@ -123,7 +119,6 @@ export function ProfileGeneral() {
               }
             />
 
-            {/* Wallet Info */}
             <Divider sx={{ my: 3 }} />
             
             <Stack spacing={1} sx={{ textAlign: 'left' }}>

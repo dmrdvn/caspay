@@ -9,8 +9,6 @@ import { SplashScreen } from 'src/components/loading-screen';
 
 import { useAuthContext } from '../hooks';
 
-// ----------------------------------------------------------------------
-
 type AuthGuardProps = {
   children: React.ReactNode;
 };
@@ -42,15 +40,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return;
     }
 
-    // Check if user needs to complete profile (onboarding)
-    // Skip check if already on profile page
-    if (authenticated && user && !pathname.includes('/dashboard/profile')) {
-      const needsOnboarding = !user.displayName || !user.email;
-      
-      if (needsOnboarding) {
-        router.replace(paths.dashboard.profile);
-        return;
-      }
+    const isProfilePage = pathname === paths.dashboard.profile;
+    if (!user?.displayName && !isProfilePage) {
+      router.replace(paths.dashboard.profile);
+      return;
     }
 
     setIsChecking(false);
