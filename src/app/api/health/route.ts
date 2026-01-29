@@ -2,7 +2,7 @@ import type { NextRequest} from 'next/server';
 
 import { NextResponse } from 'next/server';
 
-import { createClient } from 'src/lib/supabase';
+import { supabase } from 'src/lib/supabase';
 
 /**
  * Health Check Endpoint
@@ -32,7 +32,6 @@ export async function GET(_req: NextRequest) {
   try {
     // Check Supabase connection
     try {
-      const supabase = await createClient();
       const { error } = await supabase
         .from('merchants')
         .select('id')

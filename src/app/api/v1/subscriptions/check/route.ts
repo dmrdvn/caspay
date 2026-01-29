@@ -2,7 +2,7 @@ import type { NextRequest} from 'next/server';
 
 import { NextResponse } from 'next/server';
 
-import { createClient } from 'src/lib/supabase';
+import { supabaseAdmin } from 'src/lib/supabase';
 import { checkRateLimit, getRateLimitHeaders } from 'src/lib/api/rate-limit';
 import { isValidationError, validatePublicApiKey } from 'src/lib/api/validate-api-key';
 
@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = supabaseAdmin;
 
     // 6. Build subscription query
     let query = supabase

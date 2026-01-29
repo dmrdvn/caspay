@@ -1,16 +1,6 @@
 import crypto from 'crypto';
 
-import { createClient } from 'src/lib/supabase';
-
-/**
- * API Key validation and merchant authentication
- * 
- * Security features:
- * - Hashed key comparison (never stores plain keys)
- * - Rate limiting ready
- * - Permission-based access control
- * - Key status validation (active/expired)
- */
+import { supabaseAdmin } from 'src/lib/supabase';
 
 export interface ValidatedMerchant {
   id: string;
@@ -20,6 +10,7 @@ export interface ValidatedMerchant {
   network?: 'testnet' | 'mainnet';
   api_key_id: string;
   permissions: string[];
+  allowed_domains?: string[] | null;
   rate_limit?: {
     requests_per_minute: number;
     requests_per_hour: number;
@@ -28,7 +19,7 @@ export interface ValidatedMerchant {
 
 export interface ValidationError {
   error: string;
-  code: 'INVALID_KEY' | 'EXPIRED_KEY' | 'INACTIVE_MERCHANT' | 'INSUFFICIENT_PERMISSIONS' | 'TEST_KEY_IN_PRODUCTION';
+  code: 'INVALID_KEY' | 'EXPIRED_KEY' | 'INACTIVE_MERCHANT' | 'INSUFFICIENT_PERMISSIONS' | 'TEST_KEY_IN_PRODUCTION' | 'DOMAIN_NOT_ALLOWED';
   status: number;
 }
 
@@ -36,19 +27,33 @@ export interface ValidationError {
  * Hash API key for secure comparison
  */
 function hashApiKey(apiKey: string): string {
-  if (apiKey.startsWith('cp_test_')) {
-    return apiKey;
-  }
   return crypto.createHash('sha256').update(apiKey).digest('hex');
 }
 
-/**
- * Validate public API key (for payment recording, subscription checks)
- * Used by merchant frontends - read/write limited permissions
- */
+function isOriginAllowed(origin: string | null, allowedDomains: string[]): boolean {
+  if (!origin) return false;
+  
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+    
+    return allowedDomains.some(domain => {
+      if (hostname === domain) return true;
+      if (domain.startsWith('*.')) {
+        const baseDomain = domain.slice(2);
+        return hostname.endsWith('.' + baseDomain) || hostname === baseDomain;
+      }
+      return false;
+    });
+  } catch {
+    return false;
+  }
+}
+
 export async function validatePublicApiKey(
   apiKey: string | null,
-  requiredPermission: 'write:payments' | 'read:subscriptions' = 'write:payments'
+  requiredPermission: 'write:payments' | 'read:subscriptions' = 'write:payments',
+  origin?: string | null
 ): Promise<ValidatedMerchant | ValidationError> {
   if (!apiKey) {
     return {
@@ -58,7 +63,6 @@ export async function validatePublicApiKey(
     };
   }
 
-  // Validate key format (cp_live_ or cp_test_)
   if (!apiKey.startsWith('cp_live_') && !apiKey.startsWith('cp_test_')) {
     return {
       error: 'Invalid API key format',
@@ -68,11 +72,10 @@ export async function validatePublicApiKey(
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = supabaseAdmin;
     
     const keyHash = hashApiKey(apiKey);
 
-    // Query API key with merchant info
     const { data: apiKeyData, error: queryError } = await supabase
       .from('api_keys')
       .select(`
@@ -83,6 +86,7 @@ export async function validatePublicApiKey(
         active,
         expires_at,
         last_used_at,
+        allowed_domains,
         merchants (
           id,
           merchant_id,
@@ -103,7 +107,6 @@ export async function validatePublicApiKey(
       };
     }
 
-    // Check key expiration
     if (apiKeyData.expires_at && new Date(apiKeyData.expires_at) < new Date()) {
       return {
         error: 'API key has expired',
@@ -112,7 +115,6 @@ export async function validatePublicApiKey(
       };
     }
 
-    // Check merchant status
     const merchant = apiKeyData.merchants as any;
     if (!merchant || merchant.status !== 'active') {
       return {
@@ -122,9 +124,7 @@ export async function validatePublicApiKey(
       };
     }
 
-    // Validate API key type matches merchant network
     const isTestKey = apiKey.startsWith('cp_test_');
-    const isLiveKey = apiKey.startsWith('cp_live_');
     const merchantNetwork = merchant.network || 'testnet';
 
     if (isTestKey && merchantNetwork === 'mainnet') {
@@ -135,7 +135,7 @@ export async function validatePublicApiKey(
       };
     }
 
-    if (isLiveKey && merchantNetwork === 'testnet') {
+    if (!isTestKey && merchantNetwork === 'testnet') {
       return {
         error: 'Live API keys can only be used with mainnet merchants',
         code: 'INVALID_KEY',
@@ -143,7 +143,6 @@ export async function validatePublicApiKey(
       };
     }
 
-    // Check permissions
     const permissions = (apiKeyData.permissions as any)?.scopes || [];
     if (!permissions.includes(requiredPermission)) {
       return {
@@ -153,7 +152,19 @@ export async function validatePublicApiKey(
       };
     }
 
-    // Update last_used_at (async, non-blocking)
+    const isLiveKey = apiKey.startsWith('cp_live_');
+    const allowedDomains = apiKeyData.allowed_domains as string[] | null;
+    
+    if (isLiveKey && allowedDomains && allowedDomains.length > 0) {
+      if (!isOriginAllowed(origin || null, allowedDomains)) {
+        return {
+          error: 'Domain not allowed for this API key',
+          code: 'DOMAIN_NOT_ALLOWED',
+          status: 403
+        };
+      }
+    }
+
     void supabase
       .from('api_keys')
       .update({ last_used_at: new Date().toISOString() })
@@ -167,6 +178,7 @@ export async function validatePublicApiKey(
       network: merchant.network || 'testnet',
       api_key_id: apiKeyData.id,
       permissions,
+      allowed_domains: allowedDomains,
       rate_limit: {
         requests_per_minute: 60,
         requests_per_hour: 1000
@@ -183,10 +195,6 @@ export async function validatePublicApiKey(
   }
 }
 
-/**
- * Validate secret API key (for dashboard admin operations)
- * Higher privileges, used server-side only
- */
 export async function validateSecretApiKey(
   apiKey: string | null
 ): Promise<ValidatedMerchant | ValidationError> {
@@ -198,7 +206,6 @@ export async function validateSecretApiKey(
     };
   }
 
-  // Secret keys use different prefix
   if (!apiKey.startsWith('cp_secret_')) {
     return {
       error: 'Invalid secret API key format',
@@ -208,7 +215,7 @@ export async function validateSecretApiKey(
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = supabaseAdmin;
     const keyHash = hashApiKey(apiKey);
 
     const { data: apiKeyData, error: queryError } = await supabase
@@ -271,9 +278,6 @@ export async function validateSecretApiKey(
   }
 }
 
-/**
- * Check if error is a validation error
- */
 export function isValidationError(result: ValidatedMerchant | ValidationError): result is ValidationError {
   return 'error' in result;
 }

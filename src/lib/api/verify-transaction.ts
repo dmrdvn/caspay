@@ -1,16 +1,5 @@
 import { RpcClient, HttpHandler } from 'casper-js-sdk';
 
-/**
- * Casper transaction verification
- * 
- * Security features:
- * - On-chain verification (trust blockchain, not client)
- * - Amount validation
- * - Recipient validation
- * - Success status check
- * - Idempotency (prevent duplicate processing)
- */
-
 export interface TransactionVerification {
   valid: boolean;
   deployHash: string;
@@ -68,30 +57,6 @@ export async function verifyTransaction(
   senderAddress?: string,
   network: 'testnet' | 'mainnet' = 'testnet'
 ): Promise<TransactionVerification> {
-  const mockMode = process.env.MOCK_TRANSACTION_VERIFICATION === 'true';
-
-  const isFakeHash = /^(demo_tx_|mock_tx_|test_tx_)/i.test(deployHash);
-  
-  if (mockMode || isFakeHash) {
-    console.log('[verifyTransaction] MOCK/FAKE MODE: Bypassing blockchain verification');
-    console.log('[verifyTransaction] Mock tx:', {
-      deployHash,
-      expectedRecipient,
-      expectedAmount,
-      senderAddress,
-      network,
-      reason: mockMode ? 'MOCK_MODE_ENABLED' : 'FAKE_HASH_DETECTED'
-    });
-    
-    return {
-      valid: true,
-      deployHash,
-      amount: Math.floor(expectedAmount * 1e9),
-      recipient: expectedRecipient,
-      sender: senderAddress || '',
-      timestamp: new Date().toISOString()
-    };
-  }
 
   try {
     const client = getCasperClient(network);

@@ -2,19 +2,23 @@ import type { NextRequest} from 'next/server';
 
 import { NextResponse } from 'next/server';
 
-import { createClient } from 'src/lib/supabase';
+import { supabaseAdmin } from 'src/lib/supabase';
 import { checkRateLimit, getRateLimitHeaders } from 'src/lib/api/rate-limit';
 import { recordPayment, createSubscription } from 'src/lib/api/contract-service';
 import { triggerWebhooks } from 'src/lib/api/trigger-webhook';
 import { isValidationError, validatePublicApiKey } from 'src/lib/api/validate-api-key';
 import { verifyTransaction, checkTransactionProcessed } from 'src/lib/api/verify-transaction';
 
-function addCorsHeaders(headers: Record<string, string> = {}): Record<string, string> {
+function addCorsHeaders(headers: Record<string, string> = {}, origin?: string | null): Record<string, string> {
+  
+  const corsOrigin = origin || 'https://caspay.link';
+  
   return {
     ...headers,
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': corsOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
+    'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key',
+    'Access-Control-Allow-Credentials': 'true'
   };
 }
 
@@ -22,15 +26,16 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now();
 
   try {
+    const origin = req.headers.get('origin');
     const apiKey = req.headers.get('X-CasPay-Key');
-    const merchant = await validatePublicApiKey(apiKey, 'write:payments');
+    const merchant = await validatePublicApiKey(apiKey, 'write:payments', origin);
 
     if (isValidationError(merchant)) {
       return NextResponse.json(
         { error: merchant.error, code: merchant.code },
         { 
           status: merchant.status,
-          headers: addCorsHeaders()
+          headers: addCorsHeaders({}, origin)
         }
       );
     }
@@ -51,7 +56,7 @@ export async function POST(req: NextRequest) {
         },
         { 
           status: 429,
-          headers: addCorsHeaders(rateLimitHeaders)
+          headers: addCorsHeaders(rateLimitHeaders, origin)
         }
       );
     }
@@ -73,7 +78,7 @@ export async function POST(req: NextRequest) {
           error: 'Missing required fields: merchant_id, transaction_hash, amount, sender_address',
           code: 'INVALID_REQUEST'
         },
-        { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+        { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
       );
     }
 
@@ -83,7 +88,7 @@ export async function POST(req: NextRequest) {
           error: 'Invalid amount: must be a positive number',
           code: 'INVALID_AMOUNT'
         },
-        { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+        { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
       );
     }
 
@@ -93,7 +98,7 @@ export async function POST(req: NextRequest) {
           error: 'Amount exceeds maximum allowed value',
           code: 'AMOUNT_TOO_LARGE'
         },
-        { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+        { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
       );
     }
 
@@ -103,7 +108,7 @@ export async function POST(req: NextRequest) {
           error: 'Invalid transaction_hash format',
           code: 'INVALID_TX_HASH'
         },
-        { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+        { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
       );
     }
 
@@ -113,7 +118,7 @@ export async function POST(req: NextRequest) {
           error: 'Invalid merchant_id format',
           code: 'INVALID_MERCHANT_ID'
         },
-        { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+        { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
       );
     }
 
@@ -133,11 +138,11 @@ export async function POST(req: NextRequest) {
           error: 'Either product_id or subscription_plan_id is required',
           code: 'INVALID_REQUEST'
         },
-        { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+        { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
       );
     }
 
-    const supabase = await createClient();
+    const supabase = supabaseAdmin;
 
     const alreadyProcessed = await checkTransactionProcessed(transaction_hash, supabase);
     if (alreadyProcessed) {
@@ -156,53 +161,30 @@ export async function POST(req: NextRequest) {
         },
         { 
           status: 200, 
-          headers: addCorsHeaders(rateLimitHeaders)
+          headers: addCorsHeaders(rateLimitHeaders, origin)
         }
       );
     }
 
+    const maxRetries = 3;
+    const retryDelay = 3000;
     let verification: any = null;
     
-    if (transaction_hash.startsWith('demo_') || transaction_hash.startsWith('mock_') || transaction_hash.startsWith('test_')) {
-      verification = {
-        valid: true,
-        deployHash: transaction_hash,
-        amount: Math.floor(amount * 1e9),
-        recipient: merchant.wallet_address,
-        sender: sender_address,
-        timestamp: new Date().toISOString()
-      };
-    } else {
-      const maxRetries = 3;
-      const retryDelay = 3000;
-      
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        verification = await verifyTransaction(
-          transaction_hash,
-          merchant.wallet_address,
-          amount,
-          sender_address,
-          merchant.network || 'testnet'
-        );
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      verification = await verifyTransaction(
+        transaction_hash,
+        merchant.wallet_address,
+        amount,
+        sender_address,
+        merchant.network || 'testnet'
+      );
 
-        if (verification.valid) {
-          break;
-        }
-
-        if (attempt < maxRetries && verification.error?.includes('not found')) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-        }
+      if (verification.valid) {
+        break;
       }
-      if (!verification.valid && sender_address) {
-        verification = {
-          valid: true,
-          deployHash: transaction_hash,
-          amount: Math.floor(amount * 1e9),
-          recipient: merchant.wallet_address,
-          sender: sender_address,
-          timestamp: new Date().toISOString(),
-          _skipVerification: true
-        };
+
+      if (attempt < maxRetries && verification.error?.includes('not found')) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
 
@@ -212,7 +194,7 @@ export async function POST(req: NextRequest) {
           error: verification.error || 'Transaction verification failed',
           code: 'VERIFICATION_FAILED'
         },
-        { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+        { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
       );
     }
 
@@ -222,7 +204,7 @@ export async function POST(req: NextRequest) {
           error: 'Transaction sender address not found',
           code: 'SENDER_MISSING'
         },
-        { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+        { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
       );
     }
 
@@ -242,7 +224,7 @@ export async function POST(req: NextRequest) {
             error: 'Subscription plan not found',
             code: 'PLAN_NOT_FOUND'
           },
-          { status: 404, headers: addCorsHeaders(rateLimitHeaders) }
+          { status: 404, headers: addCorsHeaders(rateLimitHeaders, origin) }
         );
       }
 
@@ -292,7 +274,7 @@ export async function POST(req: NextRequest) {
               },
               { 
                 status: 500,
-                headers: addCorsHeaders(rateLimitHeaders)
+                headers: addCorsHeaders(rateLimitHeaders, origin)
               }
             );
           }
@@ -331,7 +313,7 @@ export async function POST(req: NextRequest) {
               },
               { 
                 status: 500,
-                headers: addCorsHeaders(rateLimitHeaders)
+                headers: addCorsHeaders(rateLimitHeaders, origin)
               }
             );
           }
@@ -378,7 +360,7 @@ export async function POST(req: NextRequest) {
               error: errorMessage,
               code: errorCode
             },
-            { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+            { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
           );
         }
 
@@ -415,7 +397,7 @@ export async function POST(req: NextRequest) {
             error: errorMessage,
             code: errorCode
           },
-          { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+          { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
         );
       }
 
@@ -471,7 +453,7 @@ export async function POST(req: NextRequest) {
             error: 'Product not found',
             code: 'PRODUCT_NOT_FOUND'
           },
-          { status: 404, headers: addCorsHeaders(rateLimitHeaders) }
+          { status: 404, headers: addCorsHeaders(rateLimitHeaders, origin) }
         );
       }
 
@@ -506,7 +488,7 @@ export async function POST(req: NextRequest) {
             error: errorMessage,
             code: errorCode
           },
-          { status: 400, headers: addCorsHeaders(rateLimitHeaders) }
+          { status: 400, headers: addCorsHeaders(rateLimitHeaders, origin) }
         );
       }
 
@@ -563,12 +545,7 @@ export async function POST(req: NextRequest) {
       },
       { 
         status: 200, 
-        headers: {
-          ...rateLimitHeaders,
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key'
-        }
+        headers: addCorsHeaders(rateLimitHeaders, origin)
       }
     );
 
@@ -580,7 +557,7 @@ export async function POST(req: NextRequest) {
       },
       { 
         status: 500,
-        headers: addCorsHeaders()
+        headers: addCorsHeaders({}, req.headers.get('origin'))
       }
     );
   }
@@ -588,7 +565,6 @@ export async function POST(req: NextRequest) {
 
 
 export async function OPTIONS(req: NextRequest) {
-
   const origin = req.headers.get('origin');
   
   return NextResponse.json(
@@ -596,10 +572,8 @@ export async function OPTIONS(req: NextRequest) {
     {
       status: 200,
       headers: {
-        'Access-Control-Allow-Origin': origin || '*', 
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-CasPay-Key',
-        'Access-Control-Max-Age': '86400', // 24 hours
+        ...addCorsHeaders({}, origin),
+        'Access-Control-Max-Age': '86400',
         'X-Content-Type-Options': 'nosniff',
         'X-Frame-Options': 'DENY',
         'X-XSS-Protection': '1; mode=block',
