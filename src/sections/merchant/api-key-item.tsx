@@ -25,12 +25,10 @@ import { Iconify } from 'src/components/iconify';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomPopover } from 'src/components/custom-popover';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   apiKey: ApiKeyListItem;
   onDelete: (keyId: string) => Promise<void>;
-  onRotate: (keyId: string) => Promise<{ key: string }>; // Return new key
+  onRotate: (keyId: string) => Promise<{ key: string }>;
   onToggleStatus: (keyId: string) => Promise<void>;
 };
 
@@ -71,8 +69,8 @@ export function ApiKeyItem({ apiKey, onDelete, onRotate, onToggleStatus }: Props
   const handleRotate = async () => {
     try {
       const result = await onRotate(apiKey.id);
-      setNewRotatedKey(result.key); // Show new key first
-      setConfirmRotateOpen(false); // Then close confirm dialog
+      setNewRotatedKey(result.key);
+      setConfirmRotateOpen(false);
     } catch (error) {
       console.error('Failed to rotate key:', error);
       setConfirmRotateOpen(false);
@@ -145,53 +143,120 @@ export function ApiKeyItem({ apiKey, onDelete, onRotate, onToggleStatus }: Props
           </Box>
 
           {/* Details */}
-          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-            <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                Permissions
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 0.5 }}>
-                {apiKey.permissions.scopes.join(', ')}
-              </Typography>
+          <Stack spacing={2.5}>
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              <Box sx={{ flex: 1, minWidth: 280 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                  Permissions
+                </Typography>
+                <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                  {apiKey.permissions.scopes.map((scope) => {
+                    const getPermissionColor = (permission: string) => {
+                      if (permission.includes('write')) return 'error';
+                      if (permission.includes('read')) return 'info';
+                      return 'default';
+                    };
+                    
+                    return (
+                      <Chip
+                        key={scope}
+                        label={scope}
+                        size="small"
+                        variant="soft"
+                        color={getPermissionColor(scope)}
+                        sx={{ 
+                          height: 24,
+                          fontSize: '0.75rem',
+                          fontWeight: 500
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              </Box>
+              {environment === 'live' && apiKey.allowed_domains && apiKey.allowed_domains.length > 0 && (
+                <Box sx={{ flex: 1, minWidth: 280 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                    Allowed Domains ({apiKey.allowed_domains.length})
+                  </Typography>
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+                    {apiKey.allowed_domains.slice(0, 3).map((domain) => (
+                      <Chip
+                        key={domain}
+                        label={domain}
+                        size="small"
+                        variant="outlined"
+                        color="success"
+                        sx={{ 
+                          height: 24,
+                          fontSize: '0.75rem'
+                        }}
+                      />
+                    ))}
+                    {apiKey.allowed_domains.length > 3 && (
+                      <Chip
+                        label={`+${apiKey.allowed_domains.length - 3} more`}
+                        size="small"
+                        variant="filled"
+                        color="default"
+                        sx={{ 
+                          height: 24,
+                          fontSize: '0.7rem',
+                          opacity: 0.7
+                        }}
+                      />
+                    )}
+                  </Stack>
+                </Box>
+              )}
             </Box>
 
-            {apiKey.last_used_at && (
+            <Box 
+              sx={{ 
+                display: 'grid',
+                gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)' },
+                gap: 2,
+                pt: 2,
+                borderTop: (theme) => `1px dashed ${theme.palette.divider}`
+              }}
+            >
+              {apiKey.last_used_at && (
+                <Box>
+                 
+                  <Typography variant="body2" sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>
+                    {fDateTime(apiKey.last_used_at)}
+                  </Typography>
+                </Box>
+              )}
+
+              {apiKey.expires_at && (
+                <Box>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                    Expires
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: '0.8125rem',
+                      fontWeight: 500,
+                      color: isExpired ? 'error.main' : 'text.primary',
+                    }}
+                  >
+                    {fDate(apiKey.expires_at)}
+                  </Typography>
+                </Box>
+              )}
+
               <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                  Last Used
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                  Created
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  {fDateTime(apiKey.last_used_at)}
+                <Typography variant="body2" sx={{ fontSize: '0.8125rem', fontWeight: 500 }}>
+                  {fDate(apiKey.created_at)}
                 </Typography>
               </Box>
-            )}
-
-            {apiKey.expires_at && (
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                  Expires At
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    mt: 0.5,
-                    color: isExpired ? 'error.main' : 'text.primary',
-                  }}
-                >
-                  {fDate(apiKey.expires_at)}
-                </Typography>
-              </Box>
-            )}
-
-            <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                Created
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 0.5 }}>
-                {fDate(apiKey.created_at)}
-              </Typography>
             </Box>
-          </Box>
+          </Stack>
         </Stack>
       </Card>
 
@@ -262,7 +327,6 @@ export function ApiKeyItem({ apiKey, onDelete, onRotate, onToggleStatus }: Props
         }
       />
 
-      {/* Show new rotated key */}
       <Dialog open={!!newRotatedKey} onClose={() => setNewRotatedKey(null)} maxWidth="sm" fullWidth>
         <DialogTitle>New API Key Generated</DialogTitle>
         <DialogContent>

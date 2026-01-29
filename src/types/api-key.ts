@@ -22,6 +22,7 @@ export type ApiKey = {
   key_hash: string; 
   key_hint: string; 
   permissions: ApiKeyPermissions;
+  allowed_domains?: string[] | null;
   last_used_at: string | null;
   expires_at: string | null;
   active: boolean;
@@ -37,6 +38,7 @@ export type CreateApiKeyInput = {
   name: string;
   environment: ApiKeyEnvironment; // 'live' or 'test'
   permissions?: ApiKeyPermissions;
+  allowed_domains?: string[];
   expires_at?: string | null;
 };
 

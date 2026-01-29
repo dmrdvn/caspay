@@ -10,11 +10,6 @@ export function generateApiKey(environment: ApiKeyEnvironment): string {
 
 
 export async function hashApiKey(apiKey: string): Promise<string> {
-
-  if (apiKey.startsWith('cp_test_')) {
-    return apiKey;
-  }
-
   const encoder = new TextEncoder();
   const data = encoder.encode(apiKey);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -24,11 +19,6 @@ export async function hashApiKey(apiKey: string): Promise<string> {
 }
 
 export function generateKeyHint(apiKey: string): string {
-
-  if (apiKey.startsWith('cp_test_')) {
-    return apiKey;
-  }
-
   const parts = apiKey.split('_');
   if (parts.length !== 3) {
     throw new Error('Invalid API key format');
@@ -43,11 +33,6 @@ export function generateKeyHint(apiKey: string): string {
 }
 
 export async function verifyApiKey(apiKey: string, hash: string): Promise<boolean> {
-
-  if (apiKey.startsWith('cp_test_')) {
-    return apiKey === hash;
-  }
-
   const computedHash = await hashApiKey(apiKey);
   return computedHash === hash;
 }

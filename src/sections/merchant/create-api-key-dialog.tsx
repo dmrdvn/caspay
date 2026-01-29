@@ -13,8 +13,8 @@ import Divider from '@mui/material/Divider';
 import Checkbox from '@mui/material/Checkbox';
 import MenuItem from '@mui/material/MenuItem';
 import Collapse from '@mui/material/Collapse';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import LoadingButton from '@mui/lab/LoadingButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -41,6 +41,7 @@ type FormValues = {
     read_payments: boolean;
     write_payments: boolean;
   };
+  allowedDomains: string;
   expirationOption: 'never' | '7days' | '30days';
 };
 
@@ -49,7 +50,6 @@ export function CreateApiKeyDialog({ merchantId, merchantNetwork, open, onClose 
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Set default environment based on merchant network
   const defaultEnvironment = merchantNetwork === 'mainnet' ? 'live' : 'test';
 
   const methods = useForm<FormValues>({
@@ -62,6 +62,7 @@ export function CreateApiKeyDialog({ merchantId, merchantNetwork, open, onClose 
         read_payments: true,
         write_payments: true,
       },
+      allowedDomains: '',
       expirationOption: '30days',
     },
   });
@@ -75,18 +76,18 @@ export function CreateApiKeyDialog({ merchantId, merchantNetwork, open, onClose 
   } = methods;
 
   const showAdvanced = watch('showAdvanced');
+  const environment = watch('environment');
+  const isLiveKey = environment === 'live';
 
   const onSubmit = handleSubmit(async (data) => {
     try {
       setFormError(null);
       
-      // Build permissions
       const scopes: ApiKeyScope[] = [];
       if (data.permissions.read_subscriptions) scopes.push('read:subscriptions');
       if (data.permissions.read_payments) scopes.push('read:payments');
       if (data.permissions.write_payments) scopes.push('write:payments');
 
-      // Calculate expiration date
       let expires_at: string | null = null;
       if (data.expirationOption !== 'never') {
         const now = new Date();
@@ -98,17 +99,36 @@ export function CreateApiKeyDialog({ merchantId, merchantNetwork, open, onClose 
         expires_at = now.toISOString();
       }
 
+      let allowed_domains: string[] | undefined;
+      if (data.allowedDomains.trim()) {
+        const domains = data.allowedDomains
+          .split(/[,\n]+/)
+          .map(d => d.trim())
+          .filter(d => d.length > 0);
+        
+        const isLive = data.environment === 'live';
+        for (const domain of domains) {
+          const error = validateDomain(domain, isLive);
+          if (error !== true) {
+            setFormError(`Invalid domain "${domain}": ${error}`);
+            return;
+          }
+        }
+        
+        allowed_domains = domains;
+      }
+
       const input: CreateApiKeyInput = {
         merchant_id: merchantId,
         name: data.name,
         environment: data.environment,
         permissions: { scopes },
+        allowed_domains,
         expires_at,
       };
 
       const result = await createKey(input);
       
-      // Show the plain key once
       setNewApiKey(result.key);
     } catch (error) {
       console.error('Failed to create API key:', error);
@@ -127,6 +147,63 @@ export function CreateApiKeyDialog({ merchantId, merchantNetwork, open, onClose 
     if (newApiKey) {
       navigator.clipboard.writeText(newApiKey);
     }
+  };
+
+  const validateDomain = (domain: string, isLive: boolean): string | true => {
+    if (isLive && /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/.test(domain.toLowerCase())) {
+      return 'Localhost, IP addresses, and private networks not allowed for live keys';
+    }
+    
+    if (domain.startsWith('*.')) {
+      const baseDomain = domain.slice(2);
+      if (!baseDomain || !/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(baseDomain)) {
+        return 'Invalid wildcard domain format (e.g., *.example.com)';
+      }
+
+      const parts = baseDomain.split('.');
+      const tld = parts[parts.length - 1].toLowerCase();
+      if (!isValidTLD(tld)) {
+        return `Invalid or unknown TLD in wildcard domain: .${tld}`;
+      }
+      if (parts.length < 2) {
+        return 'Wildcard domain must include at least one subdomain level (e.g., *.example.com, not *.com)';
+      }
+    } else {
+      if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(domain)) {
+        return 'Invalid domain format (e.g., example.com or app.example.com)';
+      }
+      const parts = domain.split('.');
+      const tld = parts[parts.length - 1].toLowerCase();
+      if (!isValidTLD(tld)) {
+        return `Invalid or unknown TLD: .${tld}`;
+      }
+      if (parts.length < 2) {
+        return 'Domain must include a valid TLD (e.g., .com, .io)';
+      }
+    }
+    if (domain.includes('..')) {
+      return 'Consecutive dots not allowed';
+    }
+    if (domain.endsWith('-') || domain.includes('-.') || domain.includes('.-')) {
+      return 'Invalid hyphen placement';
+    }
+    if (domain.length > 253) {
+      return 'Domain name too long (max 253 characters)';
+    }
+    
+    return true;
+  };
+
+  const isValidTLD = (tld: string): boolean => {
+    const validTLDs = [
+      'com', 'org', 'net', 'edu', 'gov', 'mil', 'int',
+      'io', 'co', 'ai', 'app', 'dev', 'tech', 'cloud',
+      'us', 'uk', 'ca', 'au', 'de', 'fr', 'jp', 'cn', 'in', 'br',
+      'info', 'biz', 'name', 'pro', 'xyz', 'online', 'site',
+      'store', 'shop', 'web', 'blog', 'news', 'media',
+      'link', 'network', 'digital', 'systems', 'services'
+    ];
+    return validTLDs.includes(tld) || tld.length === 2;
   };
 
   return (
@@ -217,6 +294,41 @@ export function CreateApiKeyDialog({ merchantId, merchantNetwork, open, onClose 
                     : 'Test keys can only be used on testnet. Live keys can only be used on mainnet.'}
                 </Typography>
               </Alert>
+
+              {isLiveKey && (
+                <Box>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Allowed Domains *
+                  </Typography>
+                  <Controller
+                    name="allowedDomains"
+                    control={control}
+                    rules={{
+                      required: isLiveKey ? 'At least one domain is required for live keys' : false,
+                      validate: (value) => {
+                        if (!isLiveKey || !value.trim()) return true;
+                        const domains = value.split(/[,\n]+/).map(d => d.trim()).filter(d => d.length > 0);
+                        if (domains.length === 0) return 'At least one domain is required';
+                        return true;
+                      }
+                    }}
+                    render={({ field, fieldState: { error } }) => (
+                      <TextField
+                        {...field}
+                        multiline
+                        rows={3}
+                        fullWidth
+                        placeholder="example.com&#10;*.example.com&#10;app.example.com"
+                        helperText={
+                          error?.message || 
+                          'Enter production domains where this key will be used (one per line or comma-separated). Supports wildcards: *.example.com. Localhost not allowed.'
+                        }
+                        error={!!error}
+                      />
+                    )}
+                  />
+                </Box>
+              )}
 
               <Divider />
 
@@ -325,13 +437,13 @@ export function CreateApiKeyDialog({ merchantId, merchantNetwork, open, onClose 
             <Button variant="outlined" onClick={handleClose}>
               Cancel
             </Button>
-            <LoadingButton
+            <Button
               variant="contained"
               onClick={onSubmit}
               loading={isSubmitting}
             >
               Create Key
-            </LoadingButton>
+            </Button>
           </>
         )}
       </DialogActions>
