@@ -40,11 +40,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return;
     }
 
-    const isProfilePage = pathname === paths.dashboard.profile;
-    if (!user?.displayName && !isProfilePage) {
-      router.replace(paths.dashboard.profile);
-      return;
-    }
+
 
     setIsChecking(false);
   };
@@ -54,7 +50,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, loading]);
 
-  if (isChecking) {
+  if (isChecking || loading) {
     return <SplashScreen />;
   }
 

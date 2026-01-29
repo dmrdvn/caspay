@@ -14,7 +14,7 @@ import { FormHead } from '../../components/form-head';
 
 export function CasperSignInView() {
   const router = useRouter();
-  const { loading, authenticated, signInWithCasper } = useAuthContext();
+  const { loading, signInWithCasper } = useAuthContext();
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -45,12 +45,6 @@ export function CasperSignInView() {
     };
   }, []);
 
-  useEffect(() => {
-    if (authenticated) {
-      router.push(paths.dashboard.root);
-    }
-  }, [authenticated, router]);
-
   const handleConnectWallet = async () => {
     try {
       setIsConnecting(true);
@@ -62,7 +56,6 @@ export function CasperSignInView() {
       }
 
       await signInWithCasper();
-      router.push(paths.dashboard.root);
     } catch (error: any) {
       console.error('Wallet connection error:', error);
       if (error.code === 1) {
