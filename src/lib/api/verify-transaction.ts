@@ -1,4 +1,4 @@
-import { RpcClient, HttpHandler } from 'casper-js-sdk';
+import { RpcClient, HttpHandler, PublicKey } from 'casper-js-sdk';
 
 export interface TransactionVerification {
   valid: boolean;
@@ -17,6 +17,36 @@ const NOWNODES_API_KEY = process.env.NOWNODES_API_KEY;
 const FALLBACK_RPC_URL_TESTNET = process.env.FALLBACK_RPC_URL_TESTNET || 'https://node.testnet.cspr.cloud/rpc';
 const FALLBACK_RPC_URL_MAINNET = process.env.FALLBACK_RPC_URL_MAINNET || 'https://node.mainnet.cspr.cloud/rpc';
 const CSPR_CLOUD_API_KEY = process.env.CSPR_CLOUD_API_KEY;
+
+function publicKeyToAccountHash(publicKeyHex: string): string {
+  try {
+    const pk = PublicKey.fromHex(publicKeyHex);
+    const accountHashObj = pk.accountHash();
+    const hashBytes = (accountHashObj as any).hashBytes as Uint8Array;
+    return Array.from(hashBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    console.error('[publicKeyToAccountHash] Error:', e);
+    return '';
+  }
+}
+
+function extractAccountHash(value: any): string {
+  if (!value) return '';
+
+  if (typeof value === 'string') {
+    return value.replace('account-hash-', '').toLowerCase();
+  }
+  
+  if (value.hashBytes && value.hashBytes instanceof Uint8Array) {
+    return Array.from(value.hashBytes as Uint8Array).map(b => (b as number).toString(16).padStart(2, '0')).join('');
+  }
+  
+  if (value.AccountHash) {
+    return extractAccountHash(value.AccountHash);
+  }
+  
+  return '';
+}
 
 function getCasperClient(network: 'testnet' | 'mainnet' = 'testnet'): RpcClient {
   const isMainnet = network === 'mainnet';
@@ -71,7 +101,9 @@ export async function verifyTransaction(
     }
     
     const { deploy } = result;
-    const executionResult = result.executionResultsV1?.[0];
+    const executionResult = result.executionResultsV1?.[0] 
+      || (result as any).executionResults?.[0]
+      || (result as any).executionInfo?.executionResult;
 
     if (!deploy || !executionResult) {
       return {
@@ -81,7 +113,9 @@ export async function verifyTransaction(
       };
     }
 
-    const isSuccess = executionResult.result && 'Success' in executionResult.result;
+    const isSuccess = executionResult.result 
+      ? 'Success' in executionResult.result 
+      : executionResult.transfers && executionResult.transfers.length > 0;
     if (!isSuccess) {
       return {
         valid: false,
@@ -90,33 +124,32 @@ export async function verifyTransaction(
       };
     }
 
-    const { session } = deploy;
-    
     let transferAmount = 0;
     let transferRecipient = '';
     let sender = '';
 
-    if (session.transfer) {
-      const { transfer } = session;
-      transferAmount = Number(transfer.args.getByName('amount')?.ui512?.getValue() || 0);
-      transferRecipient = transfer.args.getByName('target')?.key?.toPrefixedString() || '';
-      sender = deploy.header.account?.toHex() || '';
-    } else if (session.storedContractByHash || session.storedContractByName) {
- 
+    if (!executionResult.transfers || executionResult.transfers.length === 0) {
       return {
         valid: false,
         deployHash,
-        error: 'CEP-18 token transfers not yet supported'
-      };
-    } else {
-      return {
-        valid: false,
-        deployHash,
-        error: 'Unsupported transaction type'
+        error: 'No transfer found in transaction'
       };
     }
 
-    const recipientMatch = transferRecipient.toLowerCase() === expectedRecipient.toLowerCase();
+    const transfer = executionResult.transfers[0];
+    transferAmount = Number(transfer.amount || 0);
+    transferRecipient = extractAccountHash(transfer.to);
+    sender = extractAccountHash(transfer.from);
+    
+    if (!sender) {
+      const account = deploy.header.account;
+      sender = typeof account === 'string' ? account : account?.toHex?.() || '';
+    }
+
+    const expectedAccountHash = publicKeyToAccountHash(expectedRecipient);
+    const recipientAccountHash = transferRecipient.toLowerCase();
+    
+    const recipientMatch = recipientAccountHash === expectedAccountHash;
     if (!recipientMatch) {
       return {
         valid: false,

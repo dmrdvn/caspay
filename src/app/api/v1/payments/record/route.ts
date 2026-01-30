@@ -166,8 +166,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const maxRetries = 3;
-    const retryDelay = 3000;
+    const maxRetries = 6;
+    const retryDelay = 5000;
     let verification: any = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
