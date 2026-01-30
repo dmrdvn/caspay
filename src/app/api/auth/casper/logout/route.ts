@@ -17,7 +17,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      redirect: '/auth/casper/sign-in'
+    });
   } catch (error: any) {
     console.error('[Logout] Error:', error);
     return NextResponse.json(

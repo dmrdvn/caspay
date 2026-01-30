@@ -141,9 +141,15 @@ export function CasperAuthProvider({ children }: Props) {
 
   const signOut = useCallback(async () => {
     try {
-      await fetch('/api/auth/casper/logout', { method: 'POST' });
+      const response = await fetch('/api/auth/casper/logout', { method: 'POST' });
+      const data = await response.json();
+      
       await supabase.auth.signOut();
       setState({ user: null, loading: false });
+      
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      }
     } catch (error) {
       console.error('[signOut] Error:', error);
     }
