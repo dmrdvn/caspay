@@ -58,22 +58,18 @@ export async function POST(req: NextRequest) {
 
     if (!profile) {
       const userId = session.user.id;
-      const { error: insertError } = await supabaseAdmin
-        .from('user_profiles')
-        .upsert({
-          id: userId,
-          auth_user_id: userId,
-          public_key: publicKey,
-          email: session.user.email,
-          account_hash: accountHash || publicKey,
-          wallet_provider: walletProvider,
-        }, {
-          onConflict: 'id',
-          ignoreDuplicates: false
-        });
+      
+      const { error: insertError } = await supabaseAdmin.rpc('create_user_profile', {
+        p_id: userId,
+        p_auth_user_id: userId,
+        p_public_key: publicKey,
+        p_email: session.user.email || `${publicKey.slice(0, 16)}@caspay.wallet`,
+        p_account_hash: accountHash || publicKey,
+        p_wallet_provider: walletProvider,
+      });
 
       if (insertError) {
-        console.error('[Verify] Profile upsert error:', insertError);
+        console.error('[Verify] Profile insert error:', insertError);
         throw insertError;
       }
     } else {

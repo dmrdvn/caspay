@@ -60,6 +60,10 @@ export function CasperSignInView() {
       console.error('Wallet connection error:', error);
       if (error.code === 1) {
         setErrorMessage('Wallet is locked. Please unlock it.');
+      } else if (error.message?.includes('not approved')) {
+        setErrorMessage('This wallet account is not approved. Please switch to a different account in Casper Wallet or allow connection from wallet settings.');
+      } else if (error.message?.includes('User cancelled')) {
+        setErrorMessage('Connection cancelled.');
       } else {
         setErrorMessage(error.message || 'Connection failed');
       }

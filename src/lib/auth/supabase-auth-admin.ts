@@ -16,7 +16,11 @@ export async function createSupabaseSession(data: CreateSessionData) {
     if (!existingUser) {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        email_confirm: true,
+        email_confirm: false,
+        app_metadata: {
+          provider: 'wallet',
+          providers: ['wallet'],
+        },
         user_metadata: {
           public_key: data.publicKey,
           wallet_provider: data.walletProvider,
