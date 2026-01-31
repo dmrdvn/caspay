@@ -1,3 +1,5 @@
+import bcrypt from 'bcryptjs';
+
 import type { ApiKeyPrefix, ApiKeyEnvironment } from 'src/types/api-key';
 
 
@@ -8,14 +10,8 @@ export function generateApiKey(environment: ApiKeyEnvironment): string {
   return `${prefix}${secret}`;
 }
 
-
 export async function hashApiKey(apiKey: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(apiKey);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  return bcrypt.hash(apiKey, 8);
 }
 
 export function generateKeyHint(apiKey: string): string {
@@ -30,26 +26,6 @@ export function generateKeyHint(apiKey: string): string {
   const masked = '*'.repeat(Math.max(0, secret.length - 4));
 
   return `${prefix}${masked}${lastChars}`;
-}
-
-export async function verifyApiKey(apiKey: string, hash: string): Promise<boolean> {
-  const computedHash = await hashApiKey(apiKey);
-  return computedHash === hash;
-}
-
-export function extractEnvironment(apiKey: string): ApiKeyEnvironment | null {
-  if (apiKey.startsWith('cp_live_')) {
-    return 'live';
-  }
-  if (apiKey.startsWith('cp_test_')) {
-    return 'test';
-  }
-  return null;
-}
-
-export function isValidApiKeyFormat(apiKey: string): boolean {
-  const regex = /^cp_(live|test)_[a-z0-9]{24}$/;
-  return regex.test(apiKey);
 }
 
 function generateSecureRandomString(length: number): string {

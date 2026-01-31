@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 import { supabaseAdmin } from 'src/lib/supabase';
 
@@ -23,11 +23,8 @@ export interface ValidationError {
   status: number;
 }
 
-/**
- * Hash API key for secure comparison
- */
-function hashApiKey(apiKey: string): string {
-  return crypto.createHash('sha256').update(apiKey).digest('hex');
+function compareApiKey(apiKey: string, hash: string): boolean {
+  return bcrypt.compareSync(apiKey, hash);
 }
 
 function isOriginAllowed(origin: string | null, allowedDomains: string[]): boolean {
@@ -73,15 +70,14 @@ export async function validatePublicApiKey(
 
   try {
     const supabase = supabaseAdmin;
-    
-    const keyHash = hashApiKey(apiKey);
 
-    const { data: apiKeyData, error: queryError } = await supabase
+    const { data: apiKeys, error: queryError } = await supabase
       .from('api_keys')
       .select(`
         id,
         merchant_id,
         key_prefix,
+        key_hash,
         permissions,
         active,
         expires_at,
@@ -95,11 +91,20 @@ export async function validatePublicApiKey(
           network
         )
       `)
-      .eq('key_hash', keyHash)
-      .eq('active', true)
-      .single();
+      .eq('key_prefix', apiKey.startsWith('cp_live_') ? 'cp_live_' : 'cp_test_')
+      .eq('active', true);
 
-    if (queryError || !apiKeyData) {
+    if (queryError || !apiKeys || apiKeys.length === 0) {
+      return {
+        error: 'Invalid API key',
+        code: 'INVALID_KEY',
+        status: 401
+      };
+    }
+
+    const apiKeyData = apiKeys.find(key => compareApiKey(apiKey, key.key_hash));
+    
+    if (!apiKeyData) {
       return {
         error: 'Invalid API key',
         code: 'INVALID_KEY',
@@ -187,89 +192,6 @@ export async function validatePublicApiKey(
 
   } catch (error: any) {
     console.error('[validatePublicApiKey] Error:', error);
-    return {
-      error: 'Internal server error',
-      code: 'INVALID_KEY',
-      status: 500
-    };
-  }
-}
-
-export async function validateSecretApiKey(
-  apiKey: string | null
-): Promise<ValidatedMerchant | ValidationError> {
-  if (!apiKey) {
-    return {
-      error: 'Secret API key is required',
-      code: 'INVALID_KEY',
-      status: 401
-    };
-  }
-
-  if (!apiKey.startsWith('cp_secret_')) {
-    return {
-      error: 'Invalid secret API key format',
-      code: 'INVALID_KEY',
-      status: 401
-    };
-  }
-
-  try {
-    const supabase = supabaseAdmin;
-    const keyHash = hashApiKey(apiKey);
-
-    const { data: apiKeyData, error: queryError } = await supabase
-      .from('api_keys')
-      .select(`
-        id,
-        merchant_id,
-        permissions,
-        active,
-        expires_at,
-        merchants (
-          id,
-          merchant_id,
-          wallet_address,
-          status,
-          network
-        )
-      `)
-      .eq('key_hash', keyHash)
-      .eq('key_prefix', 'cp_secret_')
-      .eq('active', true)
-      .single();
-
-    if (queryError || !apiKeyData) {
-      return {
-        error: 'Invalid secret API key',
-        code: 'INVALID_KEY',
-        status: 401
-      };
-    }
-
-    // Check expiration
-    if (apiKeyData.expires_at && new Date(apiKeyData.expires_at) < new Date()) {
-      return {
-        error: 'Secret API key has expired',
-        code: 'EXPIRED_KEY',
-        status: 401
-      };
-    }
-
-    const merchant = apiKeyData.merchants as any;
-
-    return {
-      id: merchant.id,
-      merchant_id: merchant.merchant_id,
-      wallet_address: merchant.wallet_address,
-      status: merchant.status,
-      network: merchant.network || 'testnet',
-      api_key_id: apiKeyData.id,
-      permissions: (apiKeyData.permissions as any)?.scopes || ['read:all', 'write:all']
-    };
-
-  } catch (error: any) {
-    console.error('[validateSecretApiKey] Error:', error);
     return {
       error: 'Internal server error',
       code: 'INVALID_KEY',
