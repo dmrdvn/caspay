@@ -24,7 +24,9 @@ export function middleware(request: NextRequest) {
   }
 
   // Log request
-  console.log(`[API] ${request.method} ${pathname}`, {
+  console.log('[API] Request', {
+    method: request.method,
+    pathname,
     userAgent: request.headers.get('user-agent'),
     origin: request.headers.get('origin'),
     timestamp: new Date().toISOString()
