@@ -16,6 +16,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const supabase = supabaseAdmin;
+
+    const { data: nonceRecord, error: nonceError } = await supabase
+      .from('auth_nonces')
+      .select('id, public_key, expires_at, used_at')
+      .eq('nonce', nonce)
+      .eq('public_key', publicKey)
+      .maybeSingle();
+
+    if (nonceError || !nonceRecord) {
+      return NextResponse.json(
+        { error: 'Invalid or expired nonce' },
+        { status: 401 }
+      );
+    }
+
+    if (nonceRecord.used_at) {
+      return NextResponse.json(
+        { error: 'Nonce already used' },
+        { status: 401 }
+      );
+    }
+
+    if (new Date(nonceRecord.expires_at) < new Date()) {
+      return NextResponse.json(
+        { error: 'Nonce expired' },
+        { status: 401 }
+      );
+    }
+
     const message = formatAuthMessage(publicKey, nonce);
     const verification = await verifyCasperSignature(message, signature, publicKey);
 
@@ -24,6 +54,15 @@ export async function POST(req: NextRequest) {
         { error: verification.error || 'Invalid signature' },
         { status: 401 }
       );
+    }
+
+    const { error: updateNonceError } = await supabase
+      .from('auth_nonces')
+      .update({ used_at: new Date().toISOString() })
+      .eq('id', nonceRecord.id);
+
+    if (updateNonceError) {
+      console.error('[Verify] Failed to mark nonce as used:', updateNonceError);
     }
 
     const session = await createSupabaseSession({
@@ -106,7 +145,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
-      maxAge: 60 * 60 * 24 * 7, // 1 week
+      maxAge: 60 * 60 * 24 * 7,
     };
 
     cookieStore.set('sb-access-token', session.access_token, cookieOptions);

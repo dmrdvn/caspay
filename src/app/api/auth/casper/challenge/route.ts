@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { formatAuthMessage } from 'src/lib/auth/casper-signature';
+import { supabaseAdmin } from 'src/lib/supabase';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,13 +15,31 @@ export async function GET(req: NextRequest) {
     }
 
     const nonce = crypto.randomUUID();
-    const expiresAt = Date.now() + 5 * 60 * 1000;
+    const expiresAtDate = new Date(Date.now() + 5 * 60 * 1000);
     const message = formatAuthMessage(publicKey, nonce);
+
+    const supabase = supabaseAdmin;
+
+    const { error: insertError } = await supabase
+      .from('auth_nonces')
+      .insert({
+        nonce,
+        public_key: publicKey,
+        expires_at: expiresAtDate.toISOString(),
+      });
+
+    if (insertError) {
+      console.error('[Challenge] Failed to store nonce:', insertError);
+      return NextResponse.json(
+        { error: 'Failed to generate challenge' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       nonce,
       message,
-      expiresAt,
+      expiresAt: expiresAtDate.getTime(),
     });
   } catch (error: any) {
     console.error('[Challenge] Error:', error);
