@@ -116,7 +116,10 @@ export function MainLayout({
         {...slotProps?.header}
         slots={{ ...headerSlots, ...slotProps?.header?.slots }}
         slotProps={slotProps?.header?.slotProps}
-        sx={slotProps?.header?.sx}
+        sx={[
+          { zIndex: 1200 },
+          ...(Array.isArray(slotProps?.header?.sx) ? slotProps.header.sx : [slotProps?.header?.sx])
+        ]}
       />
     );
   };

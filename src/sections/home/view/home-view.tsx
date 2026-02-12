@@ -13,9 +13,8 @@ import { HomePricing } from '../home-pricing';
 import { HomeForDesigner } from '../home-for-designer';
 import { HomeTestimonials } from '../home-testimonials';
 import { HomeAdvertisement } from '../home-advertisement';
+import { HomeRoadmap } from '../home-roadmap';
 import { HomeHighlightFeatures } from '../home-highlight-features';
-
-// ----------------------------------------------------------------------
 
 export function HomeView() {
   const pageProgress = useScrollProgress();
@@ -35,10 +34,12 @@ export function HomeView() {
       <Stack sx={{ position: 'relative', bgcolor: 'background.default' }}>
         <HomeMinimal />
 
+        <HomeRoadmap />
+
         <HomeHighlightFeatures />
-        
+
         <HomeForDesigner />
-        
+
         <HomePricing />
 
         <HomeTestimonials />

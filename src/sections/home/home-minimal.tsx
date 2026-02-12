@@ -9,15 +9,9 @@ import Stack from '@mui/material/Stack';
 import SvgIcon from '@mui/material/SvgIcon';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-
-import { CONFIG } from 'src/global-config';
-
 import { varFade, MotionViewport } from 'src/components/animate';
-
 import { SectionTitle } from './components/section-title';
 import { CircleSvg, FloatLine, FloatPlusIcon } from './components/svg-elements';
-
-// ----------------------------------------------------------------------
 
 const renderLines = () => (
   <>
@@ -135,21 +129,77 @@ export function HomeMinimal({ sx, ...other }: BoxProps) {
                 overflowX: 'auto',
               }}
             >
-              <code>{`import { CasPay } from '@caspay/sdk';
-
-const caspay = new CasPay({
-  apiKey: your_caspay_api_key,
-  merchantId: 'your_merchant_id',
-  walletAddress: 'your_wallet_address',
-  network: 'testnet',
-  baseUrl: 'https://caspay.link/api',
-});
-
-const result = await caspay.payments.makePayment({
-  productId: 'caspay_product_id',
-  amount: 10,
-  currency: 'CSPR',
-});`}</code>
+              <code>
+                <Box component="span" sx={{ color: '#C586C0' }}>import</Box>{' '}
+                <Box component="span" sx={{ color: '#569CD6' }}>{'{ '}</Box>
+                <Box component="span" sx={{ color: '#4EC9B0' }}>CasPay</Box>
+                <Box component="span" sx={{ color: '#569CD6' }}>{' }'}</Box>{' '}
+                <Box component="span" sx={{ color: '#C586C0' }}>from</Box>{' '}
+                <Box component="span" sx={{ color: '#CE9178' }}>{`'@caspay/sdk'`}</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>;</Box>
+                {'\n\n'}
+                <Box component="span" sx={{ color: '#569CD6' }}>const</Box>{' '}
+                <Box component="span" sx={{ color: '#4FC1FF' }}>caspay</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>{' = '}</Box>
+                <Box component="span" sx={{ color: '#569CD6' }}>new</Box>{' '}
+                <Box component="span" sx={{ color: '#4EC9B0' }}>CasPay</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>{'({'}</Box>
+                {'\n'}
+                {'  '}<Box component="span" sx={{ color: '#9CDCFE' }}>apiKey</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>: </Box>
+                <Box component="span" sx={{ color: '#9CDCFE' }}>your_caspay_api_key</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>,</Box>
+                {'\n'}
+                {'  '}<Box component="span" sx={{ color: '#9CDCFE' }}>merchantId</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>: </Box>
+                <Box component="span" sx={{ color: '#CE9178' }}>{`'your_merchant_id'`}</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>,</Box>
+                {'\n'}
+                {'  '}<Box component="span" sx={{ color: '#9CDCFE' }}>walletAddress</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>: </Box>
+                <Box component="span" sx={{ color: '#CE9178' }}>{`'your_wallet_address'`}</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>,</Box>
+                {'\n'}
+                {'  '}<Box component="span" sx={{ color: '#9CDCFE' }}>network</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>: </Box>
+                <Box component="span" sx={{ color: '#CE9178' }}>{`'testnet'`}</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>,</Box>
+                {'\n'}
+                {'  '}<Box component="span" sx={{ color: '#9CDCFE' }}>baseUrl</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>: </Box>
+                <Box component="span" sx={{ color: '#CE9178' }}>{`'https://caspay.link/api'`}</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>,</Box>
+                {'\n'}
+                <Box component="span" sx={{ color: '#D4D4D4' }}>{'});'}</Box>
+                {'\n\n'}
+                <Box component="span" sx={{ color: '#569CD6' }}>const</Box>{' '}
+                <Box component="span" sx={{ color: '#4FC1FF' }}>result</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>{' = '}</Box>
+                <Box component="span" sx={{ color: '#C586C0' }}>await</Box>{' '}
+                <Box component="span" sx={{ color: '#4FC1FF' }}>caspay</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>.</Box>
+                <Box component="span" sx={{ color: '#9CDCFE' }}>payments</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>.</Box>
+                <Box component="span" sx={{ color: '#DCDCAA' }}>makePayment</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>{'({'}</Box>
+                {'\n'}
+                {'  '}<Box component="span" sx={{ color: '#9CDCFE' }}>productId</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>: </Box>
+                <Box component="span" sx={{ color: '#CE9178' }}>{`'caspay_product_id'`}</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>,</Box>
+                {'\n'}
+                {'  '}<Box component="span" sx={{ color: '#9CDCFE' }}>amount</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>: </Box>
+                <Box component="span" sx={{ color: '#B5CEA8' }}>10</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>,</Box>
+                {'\n'}
+                {'  '}<Box component="span" sx={{ color: '#9CDCFE' }}>currency</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>: </Box>
+                <Box component="span" sx={{ color: '#CE9178' }}>{`'CSPR'`}</Box>
+                <Box component="span" sx={{ color: '#D4D4D4' }}>,</Box>
+                {'\n'}
+                <Box component="span" sx={{ color: '#D4D4D4' }}>{'});'}</Box>
+              </code>
             </Box>
           </Box>
         </Box>
@@ -188,8 +238,6 @@ const result = await caspay.payments.makePayment({
     </Box>
   );
 }
-
-// ----------------------------------------------------------------------
 
 const ITEMS = [
   {

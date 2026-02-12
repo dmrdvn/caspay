@@ -25,8 +25,6 @@ import {
 import { SectionTitle } from './components/section-title';
 import { FloatLine, FloatTriangleDownIcon } from './components/svg-elements';
 
-// ----------------------------------------------------------------------
-
 const renderLines = () => (
   <>
     <Stack
@@ -179,9 +177,9 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
         sx={{ gap: 5, flexDirection: { xs: 'column', md: 'row' } }}
       >
         {[
-          { label: 'Total transactions', value: 12.5 },
-          { label: 'Active merchants', value: 85 },
-          { label: 'Average confirmation time', value: 18.5 },
+          { label: 'Total transactions', value: 1.2 },
+          { label: 'Active merchants', value: 5 },
+          { label: 'Average confirmation time', value: 10 },
         ].map((item) => (
           <Stack key={item.label} spacing={2} sx={{ textAlign: 'center', width: 1 }}>
             <m.div variants={varFade('inUp', { distance: 24 })}>
@@ -243,8 +241,6 @@ export function HomeTestimonials({ sx, ...other }: BoxProps) {
   );
 }
 
-// ----------------------------------------------------------------------
-
 const createReview = (index: number, name: string) => ({
   id: `e99f09a7-dd88-49d5-b1c8-1daf80c2d7b1${index}`,
   name,
@@ -257,51 +253,51 @@ const TESTIMONIALS = [
     ...createReview(1, 'Donovan Booth'),
     category: 'Developer Experience',
     content: `CasPay's SDK made integrating blockchain payments incredibly simple. The documentation is clear, and the developer experience is on par with Stripe. Highly recommended for any Casper dApp.`,
-    postedAt: 'December 15, 2024 10:30:00',
+    postedAt: 'February 8, 2026 10:30:00',
   },
   {
     ...createReview(2, 'Febe Noakes'),
     category: 'Performance',
     content: `Payment confirmations in under 20 seconds! This is exactly what we needed for our e-commerce platform. The real-time dashboard updates are a game-changer.`,
-    postedAt: 'December 10, 2024 14:20:00',
+    postedAt: 'February 3, 2026 14:20:00',
   },
   {
     ...createReview(3, 'Shayna James'),
     category: 'Security',
     content: `The dictionary-based multi-tenancy design is brilliant. We're saving 22x on gas fees compared to our previous solution, and the security model is enterprise-grade.`,
-    postedAt: 'December 5, 2024 09:15:00',
+    postedAt: 'January 27, 2026 09:15:00',
   },
   {
     ...createReview(4, 'Lucian Obrien'),
     category: 'Subscription Support',
     content: `Finally, a proper subscription payment system for Casper! The automated recurring payments work flawlessly. Customer support has been excellent too.`,
-    postedAt: 'November 28, 2024 16:45:00',
+    postedAt: 'January 19, 2026 16:45:00',
   },
   {
     ...createReview(5, 'Deja Brady'),
     category: 'Integration',
     content:
       'Migrating from our legacy payment system to CasPay took less than a day. The API is intuitive, webhooks are reliable, and the multi-token support is exactly what we needed.',
-    postedAt: 'November 22, 2024 11:30:00',
+    postedAt: 'January 10, 2026 11:30:00',
   },
   {
     ...createReview(6, 'Harrison Stein'),
     category: 'Analytics',
     content: 'The real-time analytics dashboard provides insights we never had before. Revenue tracking, subscription metrics, everything in one place. Incredible value.',
-    postedAt: 'November 18, 2024 13:20:00',
+    postedAt: 'December 28, 2025 13:20:00',
   },
   {
     ...createReview(7, 'Reece Chung'),
     category: 'Compliance',
     content:
       'As an enterprise, compliance is critical for us. CasPay\'s audit-ready infrastructure and KYC/AML architecture gave us the confidence to go live quickly.',
-    postedAt: 'November 12, 2024 08:50:00',
+    postedAt: 'December 18, 2025 08:50:00',
   },
   {
     ...createReview(8, 'Lana Steiner'),
     category: 'Cost Efficiency',
     content:
       'The cost savings are real. Single smart contract design with dictionary-based storage reduced our operational costs dramatically. Great engineering!',
-    postedAt: 'November 5, 2024 15:10:00',
+    postedAt: 'December 5, 2025 15:10:00',
   },
 ];
